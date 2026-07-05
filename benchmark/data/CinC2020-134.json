@@ -1,0 +1,51 @@
+{
+  "paper_id": "CinC2020-134",
+  "team_name": "JuJuRock",
+  "authors_affiliation": "Po-Ya Hsu, Po-Han Hsu, Tsung-Han Lee (UC San Diego, CA, USA); Hsin-Li Liu (Central Taiwan University of Science and Technology, Taichung City, Taiwan)",
+
+  "result": {
+    "official_challenge_metric_score": 0.244,
+    "official_rank": 16,
+    "evaluation_split": "official hidden full test set (abstract reports 0.244, rank 16/41; a separate Table 1 'Official' row reports 0.406, apparently from an earlier/validation phase, and is not clearly distinguished from the final test score in the text)",
+    "self_reported_metrics": {
+      "f1": "not reported",
+      "auroc": "not reported",
+      "sensitivity": "not reported",
+      "specificity": "not reported",
+      "accuracy": "not reported",
+      "other": "5-fold cross-validation scores per training dataset (Table 1): CPSC 0.455, CPSC_2 0.402, Georgia 0.456, PTB -2.589, PTB-XL 0.173, St. Petersburg 0.340, and an 'Official' row of 0.406. Abstract separately states 0.402 via 5-fold CV on full training data and 0.244 on final full test data."
+    }
+  },
+
+  "model": {
+    "architecture_family": "Ensemble",
+    "architecture_details": "Per-class binary classifiers trained on hand-crafted amplitude/timing feature maps derived from a single representative heartbeat per patient; boosting classifier (gradient-boosting style ensemble) was the best-performing model, ahead of random forest, SVM, logistic regression, k-NN, decision tree, and DL baselines (AlexNet-style CNN, LSTM).",
+    "key_novelty": "A cache-inspired (least-recently-used) clustering procedure using structural similarity index (SSIM) to select a single representative 1-second heartbeat per patient, paired with a physiologically interpretable amplitude/timing feature generator, then classified per-arrhythmia with classical ML models (boosting won out over CNN/RNN/other ML models)."
+  },
+
+  "input": {
+    "leads_used": "12",
+    "signal_length_window": "1-second representative heartbeat frame selected per patient (R-peak centered); for records >20s, multiple representations (up to 100) are sampled and voted over",
+    "sampling_rate": "not reported (uses dataset-native sampling rate, denoted fs, in the segmentation algorithm)",
+    "preprocessing": "12th-order Butterworth low-pass filter (50Hz cutoff) plus channel-wise moving-average smoothing (10ms window); R-peak detection on Lead II via Pan-Tompkins (with a noisy-signal fallback method); heartbeats segmented into 1-second frames and clustered via an SSIM-based cache-like algorithm to pick one representative heartbeat per patient"
+  },
+
+  "data": {
+    "training_datasets": "4 of the 6 official Challenge training sets used: Georgia, CPSC, CPSC_2, and PTB-XL 12-Lead ECG databases (PTB and St. Petersburg excluded due to sample size, length, and lower SNR); only records with at least one of the 27 scored classes were kept",
+    "class_imbalance_handling": "Random undersampling: for the larger class in each binary classification task, samples were randomly subsampled to match the size of the smaller class",
+    "augmentation_techniques": "not reported"
+  },
+
+  "training": {
+    "loss_function": "not reported",
+    "optimizer": "not reported",
+    "cross_validation_strategy": "80%/20% train/test split used for model and feature selection experiments per class; 5-fold cross-validation reported per dataset in Table 1",
+    "hardware": "not reported"
+  },
+
+  "contribution": {
+    "summary": "Introduces a cache-inspired (LRU + SSIM similarity) method to distill each patient's 12-lead ECG into one representative heartbeat, plus a physiologically interpretable amplitude/timing feature-map generator, then shows a boosting classifier trained on these features outperforms both other classical ML models and basic deep learning models for multi-label arrhythmia classification.",
+    "code_available": "not reported",
+    "code_url": "not reported"
+  }
+}

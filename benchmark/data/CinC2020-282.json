@@ -1,0 +1,51 @@
+{
+  "paper_id": "CinC2020-282",
+  "team_name": "Minibus",
+  "authors_affiliation": "Ran Duan, Xiaodong He, Zhuoran Ouyang; Edan Diagnostics ltd., Shenzhen, China",
+
+  "result": {
+    "official_challenge_metric_score": 0.236,
+    "official_rank": 18,
+    "evaluation_split": "official hidden full test set (score 0.236, rank 18th of 41); a separate 'validation score' of 0.446 was also officially reported on a validation split",
+    "self_reported_metrics": {
+      "f1": "not reported",
+      "auroc": "not reported",
+      "sensitivity": "not reported",
+      "specificity": "not reported",
+      "accuracy": "not reported",
+      "other": "Official validation score of 0.446 (challenge weighted-accuracy metric) on the challenge validation split, prior to the 0.236 full hidden test set score"
+    }
+  },
+
+  "model": {
+    "architecture_family": "CNN",
+    "architecture_details": "MADNN: a 1-dimensional ResNeXt-style stem followed by four stacked 'multi-scale attention modules' that sequentially combine a branch-wise (SKNet-style) attention module and a kernel-wise (SENet-style squeeze-and-excitation) attention module, then global average pooling and a fully-connected output layer. Kernel size in the stem was reduced to 3 (from 7 in standard ResNeXt) to preserve high-frequency ECG features.",
+    "key_novelty": "Combines kernel-wise (SE) and branch-wise (SK) attention sequentially into a single 'multi-scale attention module' on a 1D ResNeXt backbone, allowing each attention type to be optimized separately with diverse attention weights across convolutional kernels."
+  },
+
+  "input": {
+    "leads_used": "not reported",
+    "signal_length_window": "60 seconds fixed length (30000 sample points at 500 Hz); shorter signals end-to-end repeated, longer signals truncated from the end; random cropping augmentation applied within 60-sample-point start/end intervals",
+    "sampling_rate": "500 Hz (resampled via FFT from original 500 Hz or 1000 Hz recordings)",
+    "preprocessing": "FFT-based resampling to 500 Hz, padding/truncation to a fixed 60-second (30000 sample point) length, random cropping augmentation during training"
+  },
+
+  "data": {
+    "training_datasets": "43134 samples obtained from the PhysioNet/Computing in Cardiology Challenge 2020 official training data; no external data reported; 27 scored diagnosis classes used; data split 80% train / 10% validation / 10% test",
+    "class_imbalance_handling": "Focal loss as the training loss; additionally a per-class balance factor (Wi = 2*mu_i/mu) used to probabilistically skip/downsample over-represented classes during training",
+    "augmentation_techniques": "Random cropping of the padded signal within reserved 60-sample-point start and end intervals"
+  },
+
+  "training": {
+    "loss_function": "Binary cross-entropy per label (paper also states focal loss was adopted to address class imbalance)",
+    "optimizer": "Adam (initial learning rate 0.0001, beta1=0.9, beta2=0.999, epsilon=1e-08), with learning rate reduced by factor 0.5 after 5 epochs without validation loss improvement",
+    "cross_validation_strategy": "not reported (single 80/10/10 train/validation/test split; a separate ensemble classifier was evaluated via cross-validation on the local testing set)",
+    "hardware": "not reported"
+  },
+
+  "contribution": {
+    "summary": "Proposes MADNN, a 1D ResNeXt-based network with a novel multi-scale attention module that sequentially combines SENet-style kernel-wise attention and SKNet-style branch-wise attention, applied to 12-lead ECG arrhythmia classification.",
+    "code_available": "not reported",
+    "code_url": "not reported"
+  }
+}

@@ -1,0 +1,51 @@
+{
+  "paper_id": "CinC2020-435",
+  "team_name": "Germinating",
+  "authors_affiliation": "Guadalupe García-Isla, Rita Laureanti, Valentina D. Corino, Luca T. Mainardi; Politecnico di Milano, Milan, Italy",
+
+  "result": {
+    "official_challenge_metric_score": "not reported",
+    "official_rank": "not reported",
+    "evaluation_split": "10-fold cross-validation on provided training data only (phase 1 evaluated on CPSC2018 subset with 9 categories; phase 2 evaluated on all six databases with 24 categories) — no official hidden test set score or leaderboard rank is stated in the paper",
+    "self_reported_metrics": {
+      "f1": 0.116,
+      "auroc": 0.541,
+      "sensitivity": "not reported",
+      "specificity": "not reported",
+      "accuracy": 0.148,
+      "other": "Phase 1 (9 categories, CPSC2018 only, 10-fold CV): accuracy 94.4%±0.4, Challenge metric (geometric mean of Fβ and Gβ) 0.644±0.031, AUROC 0.099±0.009, AUPRC 0.019±0.002, F 0.727±0.019, Fβ 0.763±0.019, Gβ 0.525±0.025. Phase 2 (24 categories, all 6 databases, 10-fold CV): Challenge metric 0.030±0.009, AUPRC 0.083±0.001, F 0.116±0.004, Fβ 0.144±0.004, Gβ 0.062±0.002, Accuracy 0.148±0.009. Per-rhythm sensitivity/specificity values are given in Tables 1 (phase 1) and 2 (phase 2), e.g. phase 2 AF: Se 94.55%±1.19, Sp 93.97%±0.56."
+    }
+  },
+
+  "model": {
+    "architecture_family": "Ensemble",
+    "architecture_details": "Ensemble of classical machine-learning classifiers, each dedicated to a specific region of the cardiac conduction system: phase 1 used 4 classifiers (2 support vector machines for permanent conditions grouped by ECG region, plus 2 bagged-tree classifiers for the sporadic PAC/PVC events); phase 2 used 7 boosted-tree classifiers split by cardiac region (atrial tissue; sinoatrial node; AV node; bundle branches; ventricular tissue; plus dedicated PAC and PVC classifiers). Inputs are hand-crafted features: cross-correlation distances between intra-patient and rhythm-specific inter-patient morphological templates computed over defined ECG windows (P-wave, QRS complex, PQ-ST segment, T-wave, PR, RT), heart-rate-variability features (RR mean/SD, successive-difference SD, pNN50, RMSSD), Global Electric Heterogeneity (GEH) vectorcardiographic features, plus age and sex.",
+    "key_novelty": "A physiologically-motivated feature-engineering approach: builds intra-patient and rhythm-specific inter-patient morphological templates for distinct ECG segments/cardiac regions and feeds the cross-correlation distances between them (plus HRV and GEH features) into region-specific classifiers, rather than an end-to-end deep network."
+  },
+
+  "input": {
+    "leads_used": "12",
+    "signal_length_window": "Signals ranged from 6s to 60s (arrhythmias assumed present over the whole signal); fixed sub-windows anchored on the R-peak were extracted per segment of interest: P-wave (-300 to -40 ms), QRS-complex (-70 to +60 ms), PQ-ST (-150 to +250 ms, excluding -55 to +55 ms), T-wave (+100 to +350 ms), PR (-288 ms to R), RT (R to +258 ms)",
+    "sampling_rate": "not reported",
+    "preprocessing": "Baseline removed via two median filters subtracted from the original signal; powerline/high-frequency noise removed with an equal-ripple FIR low-pass filter (3-dB point at 35 Hz); R-peaks detected via Pan-Tompkins algorithm on 5 positive-QRS leads (I, II, III, aVF, V4, V5, V6), combined into an impulse train, Gaussian-smoothed, cross-correlation aligned (V5 as reference), median-combined across leads, then Pan-Tompkins re-applied to the resulting signal"
+  },
+
+  "data": {
+    "training_datasets": "All six official Challenge 2020 databases (CPSC2018, St Petersburg INCART, PTB Diagnostic ECG Database, PTB-XL, Georgia 12-Lead ECG Challenge Database) — 43,101 labeled 12-lead ECGs; phase 1 evaluation restricted to the CPSC2018 subset only",
+    "class_imbalance_handling": "not reported",
+    "augmentation_techniques": "not reported"
+  },
+
+  "training": {
+    "loss_function": "Not applicable — classifiers are support vector machines (phase 1) and bagged/boosted decision trees (phases 1-2), which are not trained via gradient-based loss minimization in the deep-learning sense",
+    "optimizer": "Not applicable — SVM and tree-based (bagged/boosted) classifiers",
+    "cross_validation_strategy": "10-fold cross-validation, implemented in Matlab 2020a, for both phase 1 and phase 2 classifiers",
+    "hardware": "not reported"
+  },
+
+  "contribution": {
+    "summary": "Proposes a physiologically-interpretable ECG classifier that builds intra-patient and rhythm-specific inter-patient morphological templates per cardiac conduction region and feeds cross-correlation distances plus HRV/GEH features into an ensemble of region-specific SVM/tree classifiers, rather than using an end-to-end deep network.",
+    "code_available": "not reported",
+    "code_url": "not reported"
+  }
+}

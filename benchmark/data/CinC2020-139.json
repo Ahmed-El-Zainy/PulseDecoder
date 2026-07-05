@@ -1,0 +1,51 @@
+{
+  "paper_id": "CinC2020-139",
+  "team_name": "EASTBLUE",
+  "authors_affiliation": "Ao Ran, Dongsheng Ruan, Yuan Zheng, Huafeng Liu; Zhejiang University, China",
+
+  "result": {
+    "official_challenge_metric_score": "not reported",
+    "official_rank": "not reported",
+    "evaluation_split": "Unable to score/rank on the official hidden validation and test sets; results reported via 5-fold cross-validation on the training set",
+    "self_reported_metrics": {
+      "f1": "not reported",
+      "auroc": "not reported",
+      "sensitivity": "not reported",
+      "specificity": "not reported",
+      "accuracy": "not reported",
+      "other": "5-fold CV challenge score of 0.7030 ± 0.0090 for the proposed EASTNet model (best among compared models: SVM 0.5611 ± 0.0156, LSTM 0.5937 ± 0.0119, 1D-ResNet34 0.6760 ± 0.0044, 1D-ResNet34+SEblock 0.6856 ± 0.0132, 1D-ResNet34+MLP 0.6875 ± 0.0121)"
+    }
+  },
+
+  "model": {
+    "architecture_family": "ResNet",
+    "architecture_details": "EASTNet: a 34-layer 1D ResNet (modified from 2D image ResNet) with 1D Squeeze-and-Excitation (SE) blocks embedded in each residual basic block, followed by a multi-layer perceptron (MLP) classification head (512 -> 256 -> 24 nodes). First convolution kernel enlarged to size 15 to increase receptive field, followed by a 7x7 convolution; max pooling replaced with a strided convolutional layer; dropout layers added for robustness.",
+    "key_novelty": "Combines a heartbeat-level random sampling data augmentation strategy (concatenating several randomly selected single-heartbeat segments as one input) with a 1D SE-ResNet feature encoder whose SE blocks let the network learn inter-lead channel importance."
+  },
+
+  "input": {
+    "leads_used": "12",
+    "signal_length_window": "Input formed from multiple intercepted single-heartbeat segments (four randomly sampled beats used as the final input after comparing 1-6 beats)",
+    "sampling_rate": "not reported (each intercepted heartbeat resampled to 300 sample points)",
+    "preprocessing": "Baseline drift removal, 3-45 Hz FIR band-pass filtering, R-peak detection, heartbeat interception around the R-peak, resampling of each beat segment to 300 points, then random sampling/combination of heartbeats as input"
+  },
+
+  "data": {
+    "training_datasets": "Official challenge training set only, filtered/cleaned to 6720 valid records (201600 extracted heartbeats); no external data reported",
+    "class_imbalance_handling": "Statistics collected per abnormality class, then selective discarding and duplication of records to balance the class distribution as much as possible",
+    "augmentation_techniques": "Random combination of intercepted single-heartbeat segments (compared 1-6 beats, both continuous and random sampling; 4 random beats chosen as final input) used explicitly as a data augmentation method that reduces overfitting"
+  },
+
+  "training": {
+    "loss_function": "not reported",
+    "optimizer": "not reported",
+    "cross_validation_strategy": "5-fold cross-validation on the training set (also compared against 3-fold and 4-fold CV for robustness)",
+    "hardware": "not reported"
+  },
+
+  "contribution": {
+    "summary": "Proposes EASTNet, a 1D SE-ResNet+MLP model trained on randomly sampled/combined single-heartbeat segments rather than whole ECG records, and shows via 5-fold CV that this beat-sampling augmentation reduces overfitting and outperforms SVM, LSTM, and plain 1D-ResNet34 baselines, though the team could not obtain an official leaderboard score/rank.",
+    "code_available": "not reported",
+    "code_url": "not reported"
+  }
+}

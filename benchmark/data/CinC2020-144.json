@@ -1,0 +1,51 @@
+{
+  "paper_id": "CinC2020-144",
+  "team_name": "CardioLux",
+  "authors_affiliation": "Sebastián Cajas, Pedro Astaiza, David Santiago Garcia-Chicangana, Camilo Segura, Diego M Lopéz; University of Cauca, Popayán, Colombia",
+
+  "result": {
+    "official_challenge_metric_score": "not reported",
+    "official_rank": "not reported",
+    "evaluation_split": "10-fold cross-validation on the training set; the paper states the full approach could not be submitted for the official challenge testing score due to lack of computational resources/time",
+    "self_reported_metrics": {
+      "f1": "not reported",
+      "auroc": "not reported",
+      "sensitivity": "not reported",
+      "specificity": "not reported",
+      "accuracy": "not reported",
+      "other": "Challenge score of 0.22 obtained via 10-fold cross-validation on the training set using the final CNN model"
+    }
+  },
+
+  "model": {
+    "architecture_family": "CNN",
+    "architecture_details": "1D convolutional neural network (1D-CNN) with 4 output filters, kernel size 4, stride 1, taking the 27 PCA-selected features as a sequence input, with ReLU activation. RNN, LSTM, and CNN+LSTM hybrid architectures were also tried but the CNN performed best.",
+    "key_novelty": "Uses classical signal-processing feature engineering (300 time/frequency/statistical/non-linear features per lead, PCA-reduced to 27) as the input representation for a lightweight 1D-CNN, rather than feeding raw ECG waveforms directly into the network."
+  },
+
+  "input": {
+    "leads_used": "12",
+    "signal_length_window": "not reported (feature-based pipeline; per-record input reduced to a 27-feature vector rather than a fixed raw-waveform window)",
+    "sampling_rate": "not reported",
+    "preprocessing": "Savitzky-Golay smoothing filter selected for denoising (compared against Symlet- and Daubechies-family wavelet decomposition/thresholding); custom detrending method to remove baseline drift; missing categorical fields (e.g. sex) imputed with the mean value; features normalized using the Keras normalization module"
+  },
+
+  "data": {
+    "training_datasets": "Official challenge training set only (reported as 6877/\"more than 6800\" ECG recordings overall; 4813 records shown feeding the feature-extraction pipeline in Figure 1); no external data reported",
+    "class_imbalance_handling": "not reported",
+    "augmentation_techniques": "not reported"
+  },
+
+  "training": {
+    "loss_function": "not reported",
+    "optimizer": "not reported",
+    "cross_validation_strategy": "10-fold cross-validation (K-fold, via scikit-learn) on the training set",
+    "hardware": "not reported"
+  },
+
+  "contribution": {
+    "summary": "Extracts 300 time-, frequency-, statistical-, and non-linear-domain features per lead, selects 27 via PCA-based feature selection, and classifies 9 arrhythmia classes with a compact 1D-CNN, prioritizing model interpretability over end-to-end raw-signal deep learning.",
+    "code_available": "not reported",
+    "code_url": "not reported"
+  }
+}

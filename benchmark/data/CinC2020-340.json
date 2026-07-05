@@ -1,0 +1,51 @@
+{
+  "paper_id": "CinC2020-340",
+  "team_name": "not reported — NOTE: this paper is NOT an entry in the 2020 12-lead ECG classification challenge. It describes a system built on the PhysioNet/CinC 2018 Challenge dataset (apnoea/non-apnoea arousal detection from polysomnogram signals), merely published in the same CinC 2020 proceedings volume (DOI 10.22489/CinC.2020.340).",
+  "authors_affiliation": "Philip de Chazal, John Du, Nadi Sadr; Charles Perkins Centre and School of Biomedical Engineering, The University of Sydney, Australia",
+
+  "result": {
+    "official_challenge_metric_score": "not reported",
+    "official_rank": "not reported",
+    "evaluation_split": "10-fold cross-validation on the 2018 PhysioNet/CinC Challenge PSG dataset (994 overnight recordings); this is unrelated to the 2020 12-lead-ECG Challenge's official hidden test set / official weighted-accuracy metric.",
+    "self_reported_metrics": {
+      "f1": "not reported",
+      "auroc": 0.91,
+      "sensitivity": 0.85,
+      "specificity": 0.85,
+      "accuracy": "not reported",
+      "other": "Two-class (arousal vs. non-arousal) results: AUROC=0.91, AUPRC=0.74, optimal specificity=sensitivity=0.85. Three-class (non-arousal / non-apnoea arousal / apnoea arousal) results: volume under ROC surface (VUROS)=0.75, non-arousal specificity=0.72, apnoea-arousal sensitivity=0.76, non-apnoea-arousal sensitivity=0.69, AUPRC=0.18 (non-apnoea arousal) and 0.76 (apnoea arousal). LDA baseline comparison: VUROS=0.68, two-class AUROC=0.88."
+    }
+  },
+
+  "model": {
+    "architecture_family": "Ensemble",
+    "architecture_details": "Bank of 10 single-hidden-layer feed-forward neural networks (20 hidden units each, softmax output over 3 classes), with outputs combined by averaging the ten classifiers' probability estimates; compared against a linear discriminant analysis (LDA) classifier baseline. A first-order-hold upsampler converts epoch-level classifications to a 200Hz output annotation.",
+    "key_novelty": "Extends the authors' prior 2018 Challenge hand-crafted-feature FFNN system (which only detected non-apnoea arousals) to jointly classify both apnoea-related and non-apnoea-related arousals (3-class) from multi-signal polysomnogram data, increasing clinical applicability."
+  },
+
+  "input": {
+    "leads_used": "not applicable — uses polysomnogram (PSG) channels (SpO2, chin EMG, EOG, airflow, abdominal/chest respiratory effort, 6 EEG derivations: F3-M2, F4-M1, O1-M2, O2-M1, C4-M1, C3-M2), not 12-lead ECG",
+    "signal_length_window": "15-second epochs; multi-epoch context formed by combining features from 4 epochs on either side of the current epoch (~1 minute look-ahead/look-back)",
+    "sampling_rate": "200 Hz",
+    "preprocessing": "Artefact filtering and signal normalization per channel prior to epoch-based feature extraction; 59 time- and frequency-domain features extracted per 15s epoch (e.g. kurtosis, skewness, relative band energy, approximate entropy, signal envelope coefficient of variation)."
+  },
+
+  "data": {
+    "training_datasets": "2018 PhysioNet/Computing in Cardiology Challenge PSG dataset (994 overnight recordings from Massachusetts General Hospital sleep laboratories); no 2020 Challenge 12-lead ECG data used.",
+    "class_imbalance_handling": "not reported",
+    "augmentation_techniques": "not reported"
+  },
+
+  "training": {
+    "loss_function": "Cross-entropy cost function (for the FFNN classifier)",
+    "optimizer": "not reported",
+    "cross_validation_strategy": "10-fold cross-validation: 994 records randomly divided into ten sets of 99-100 records, nine used for training and one for testing, rotated across folds",
+    "hardware": "not reported"
+  },
+
+  "contribution": {
+    "summary": "Out of scope for the 2020 12-lead ECG classification challenge benchmark: this paper presents an extension of the authors' 2018 Challenge polysomnogram-arousal-detection system, using a bank of feed-forward neural networks to jointly detect apnoea and non-apnoea arousals from PSG signals.",
+    "code_available": "not reported",
+    "code_url": "not reported"
+  }
+}

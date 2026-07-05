@@ -1,0 +1,51 @@
+{
+  "paper_id": "CinC2020-374",
+  "team_name": "MCIRCC",
+  "authors_affiliation": "Sardar Ansari, Christopher E Gillies, Brandon Cummings, Jonathan Motyka, Guan Wang, Kevin R Ward, Hamid Ghanbari — University of Michigan / Michigan Center for Integrative Research in Critical Care (MCIRCC), Ann Arbor, MI, USA",
+
+  "result": {
+    "official_challenge_metric_score": 0.141,
+    "official_rank": 27,
+    "evaluation_split": "official hidden test set (full test score); also report 0.616 on the challenge validation set (hidden)",
+    "self_reported_metrics": {
+      "f1": "not reported",
+      "auroc": "not reported",
+      "sensitivity": "not reported",
+      "specificity": "not reported",
+      "accuracy": "not reported",
+      "other": "Per-class AUROC ranged 0.83-0.99 and per-class AUPRC ranged 0.12-0.97 on the challenge public (training) data for the ensemble model (no single overall number reported)"
+    }
+  },
+
+  "model": {
+    "architecture_family": "ResNet",
+    "architecture_details": "1D ResNet operating on 12-lead ECGs (12x2500 input at 250Hz for 10s), composed of an input conv layer followed by residual blocks (each: max-pooling with stride 2 + n conv layers + residual connection), repeated m times, then a flatten layer, dropout layer, z dense layers of size f with ReLU, and a final 27-node dense sigmoid output layer. Architecture hyperparameters (n=2-6, m=4-10, k=16-64 filters, filter size s=3-11, dropout p=0-0.5, z=0-2 dense layers, f=32-128) were manually searched (166 networks trained); the final classifier is an ensemble of the 5 top-performing models after transfer learning (median of class scores, mode of binary labels).",
+    "key_novelty": "Pre-trains ResNet models on a very large (1,277,298-recording) proprietary hospital ECG dataset (MUSE, University of Michigan) whose free-text diagnosis labels were mapped to challenge SNOMED-CT codes via UMLS/CUI lookup, then transfers and fully retrains the models on the official challenge data."
+  },
+
+  "input": {
+    "leads_used": "12",
+    "signal_length_window": "10s fixed window (first 10s taken if longer, zero-padded to 10s if shorter)",
+    "sampling_rate": "250 Hz (all ECGs resampled to 250Hz)",
+    "preprocessing": "Resampling to 250Hz; double median filter (200ms then 600ms) applied per lead to remove baseline wander; 5th-order Butterworth low-pass filter with 40Hz cutoff; truncation/zero-padding to 10s"
+  },
+
+  "data": {
+    "training_datasets": "All six official challenge training datasets combined; plus a large external proprietary dataset (MUSE, 1,277,298 ECGs from 374,321 patients, University of Michigan, 1990-2012) used for pre-training",
+    "class_imbalance_handling": "not reported",
+    "augmentation_techniques": "not reported"
+  },
+
+  "training": {
+    "loss_function": "Binary cross-entropy",
+    "optimizer": "Adam, with learning rate reduced by factor of 0.1 if the challenge metric did not improve for 2 consecutive epochs (floor of 0.0001); early stopping if metric did not improve by >=0.01 for 3 consecutive epochs",
+    "cross_validation_strategy": "Not k-fold CV; data split into training (60%), validation (20%), and testing (20%) subsets, for both MUSE pretraining and challenge fine-tuning",
+    "hardware": "not reported"
+  },
+
+  "contribution": {
+    "summary": "Pre-trains an ensemble of 1D ResNet architectures on a very large proprietary hospital ECG dataset (MUSE) with labels mapped to challenge SNOMED-CT codes via UMLS, then transfers and fully retrains the top models on the official challenge data to build the final classifier.",
+    "code_available": "not reported",
+    "code_url": "not reported"
+  }
+}

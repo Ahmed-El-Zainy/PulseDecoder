@@ -1,0 +1,51 @@
+{
+  "paper_id": "CinC2020-161",
+  "team_name": "ECU",
+  "authors_affiliation": "Najmeh Fayyazifar, Selam Ahderom, David Suter (Edith Cowan University, Perth); Andrew Maiorana (Curtin University; Fiona Stanley Hospital); Girish Dwivedi (Fiona Stanley Hospital; University of Western Australia), Perth, Australia",
+
+  "result": {
+    "official_challenge_metric_score": 0.382,
+    "official_rank": 9,
+    "evaluation_split": "official hidden test set (full test score); also reports Challenge validation-set score of 0.623 and 10-fold CV scores on training data",
+    "self_reported_metrics": {
+      "f1": "not reported",
+      "auroc": "not reported",
+      "sensitivity": "not reported",
+      "specificity": "not reported",
+      "accuracy": "not reported",
+      "other": "10-fold cross-validation scores on training data (using the same official Challenge metric): hand-designed CNN 59.2%, hand-designed Conv-BiLSTM (RCNN) 61.9%, Conv-BiLSTM with wavelet input 62.9%, NAS-based (DARTS) CNN with wavelet input 64.4% (this last model was not submitted/scored on validation or full test sets)"
+    }
+  },
+
+  "model": {
+    "architecture_family": "Hybrid",
+    "architecture_details": "Two models proposed. (1) Hand-designed RCNN: 49 1D convolutional layers arranged in 16 blocks of 3 conv layers each (Conv-BN-ReLU-Dropout), with skip connections between blocks (ResNet-style concatenation), a stem conv layer with 32 filters, channel doubling at blocks 4/8/12 (up to 256 channels), filter length 24, followed by a BiLSTM layer with 300 hidden units and a final sigmoid layer with 24 output nodes. (2) NAS-based CNN: architecture discovered via Differentiable Architecture Search (DARTS) with a custom 1D search space (convolutions with filter lengths 3/5/7/9/11, dilated convolutions, max/average pooling, skip connections); final searched network stacked to 20 blocks (2 reduction blocks) with a sigmoid output layer.",
+    "key_novelty": "Directly compares a hand-designed CNN+BiLSTM (RCNN) architecture against an automatically discovered CNN architecture (via DARTS neural architecture search) for the same 12-lead ECG multi-label classification task, to study the impact of architecture design choice versus automated search."
+  },
+
+  "input": {
+    "leads_used": "12",
+    "signal_length_window": "10s fixed window; signals shorter than 10s zero-padded, longer than 10s truncated to the last 10 seconds",
+    "sampling_rate": "not reported",
+    "preprocessing": "Zero-padding/truncation to a fixed 10s window; for the NAS-based model, input was transformed via a 1-level Db1 wavelet decomposition, using only the approximation coefficients (details discarded) to reduce input size/compute"
+  },
+
+  "data": {
+    "training_datasets": "Official PhysioNet/CinC 2020 Challenge training data (43101 multi-label ECG samples originally; reduced to 37619 samples after discarding classes not among the 27 scored classes, collapsed to a 24-class task after merging 3 equivalent class pairs). No external datasets mentioned.",
+    "class_imbalance_handling": "Used a moving/adjusted decision threshold (0.2 instead of the default 0.5) for the multi-label sigmoid outputs to account for class imbalance",
+    "augmentation_techniques": "not reported"
+  },
+
+  "training": {
+    "loss_function": "not reported",
+    "optimizer": "RCNN model: Adam optimizer, He initialization, initial learning rate 1e-3 with ReduceLROnPlateau scheduler (decay 0.1, patience 3, min lr 1e-6), 50 epochs with early stopping (patience 15). NAS-based model: SGD with momentum 0.9, initial learning rate 0.025 with cosine annealing scheduler (min lr 1e-3); architecture search run for 50 epochs, final architecture trained from scratch for 200 epochs with early stopping (patience 20).",
+    "cross_validation_strategy": "10-fold cross-validation on the training dataset (random partition into 10 subsets; per fold: 8 for training, 1 for validation/early stopping, 1 held out for testing), mean of 10 folds reported",
+    "hardware": "RCNN model trained on a single Nvidia GeForce GTX 1080 Ti GPU (~300s/epoch, up to 250 minutes total); NAS-based model search and training on a single Nvidia Quadro RTX 8000 GPU (~50 min/epoch for search; ~20 hours total training run time)"
+  },
+
+  "contribution": {
+    "summary": "Compares a hand-designed Conv-BiLSTM (RCNN) architecture against an automatically-designed CNN found via Differentiable Architecture Search (DARTS) for 12-lead ECG abnormality classification, finding the NAS-discovered architecture achieves higher cross-validation scores than the hand-designed model, though it was not scored on the official validation/test sets.",
+    "code_available": "not reported",
+    "code_url": "not reported"
+  }
+}

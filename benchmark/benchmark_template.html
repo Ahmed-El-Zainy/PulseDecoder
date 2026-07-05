@@ -1,0 +1,740 @@
+<title>PulseDecoder Benchmark — PhysioNet/CinC2020 ECG Literature Comparison</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  @font-face {
+    font-family: "Newsreader";
+    font-style: italic;
+    font-weight: 400;
+    font-display: swap;
+    src: url(data:font/woff2;base64,__FONT_NEWSREADER_ITALIC__) format("woff2");
+  }
+  @font-face {
+    font-family: "Newsreader";
+    font-style: normal;
+    font-weight: 500;
+    font-display: swap;
+    src: url(data:font/woff2;base64,__FONT_NEWSREADER_REGULAR__) format("woff2");
+  }
+  @font-face {
+    font-family: "IBM Plex Sans";
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url(data:font/woff2;base64,__FONT_PLEX_SANS_400__) format("woff2");
+  }
+  @font-face {
+    font-family: "IBM Plex Sans";
+    font-style: normal;
+    font-weight: 600;
+    font-display: swap;
+    src: url(data:font/woff2;base64,__FONT_PLEX_SANS_600__) format("woff2");
+  }
+  @font-face {
+    font-family: "IBM Plex Mono";
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url(data:font/woff2;base64,__FONT_PLEX_MONO_400__) format("woff2");
+  }
+  @font-face {
+    font-family: "IBM Plex Mono";
+    font-style: normal;
+    font-weight: 500;
+    font-display: swap;
+    src: url(data:font/woff2;base64,__FONT_PLEX_MONO_500__) format("woff2");
+  }
+
+  :root {
+    --bg: #faf7f5;
+    --surface: #ffffff;
+    --surface-2: #f3ede8;
+    --ink: #241f1c;
+    --ink-soft: #6b615a;
+    --border: #e4ddd6;
+    --accent: #0f6e63;
+    --accent-ink: #0a4a43;
+    --accent-line: #b65c4a;
+    --row-hover: #f1e9e3;
+    --top-tier: #0f6e63;
+
+    --fam-cnn-fg: #2f6f63;      --fam-cnn-bg: rgba(47,111,99,0.12);
+    --fam-resnet-fg: #1f5c6b;   --fam-resnet-bg: rgba(31,92,107,0.12);
+    --fam-transformer-fg: #6b4a85; --fam-transformer-bg: rgba(107,74,133,0.12);
+    --fam-rnn-fg: #3e5a8c;      --fam-rnn-bg: rgba(62,90,140,0.12);
+    --fam-hybrid-fg: #8c5a2e;   --fam-hybrid-bg: rgba(140,90,46,0.12);
+    --fam-ensemble-fg: #a24b3a; --fam-ensemble-bg: rgba(162,75,58,0.12);
+    --fam-other-fg: #6b625b;    --fam-other-bg: rgba(107,98,91,0.12);
+
+    color-scheme: light;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #12181c;
+      --surface: #1a2126;
+      --surface-2: #202932;
+      --ink: #ece6e1;
+      --ink-soft: #a79e97;
+      --border: #2b333a;
+      --accent: #4fb3a3;
+      --accent-ink: #8fd4c6;
+      --accent-line: #c97b64;
+      --row-hover: #212a30;
+      --top-tier: #4fb3a3;
+
+      --fam-cnn-fg: #7fd0bc;      --fam-cnn-bg: rgba(127,208,188,0.14);
+      --fam-resnet-fg: #7ec2de;   --fam-resnet-bg: rgba(126,194,222,0.14);
+      --fam-transformer-fg: #d2aee6; --fam-transformer-bg: rgba(210,174,230,0.14);
+      --fam-rnn-fg: #a9c0ea;      --fam-rnn-bg: rgba(169,192,234,0.14);
+      --fam-hybrid-fg: #edbd82;   --fam-hybrid-bg: rgba(237,189,130,0.14);
+      --fam-ensemble-fg: #ec9a85; --fam-ensemble-bg: rgba(236,154,133,0.14);
+      --fam-other-fg: #c6bdb4;    --fam-other-bg: rgba(198,189,180,0.14);
+      color-scheme: dark;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --bg: #12181c; --surface: #1a2126; --surface-2: #202932; --ink: #ece6e1; --ink-soft: #a79e97;
+    --border: #2b333a; --accent: #4fb3a3; --accent-ink: #8fd4c6; --accent-line: #c97b64; --row-hover: #212a30; --top-tier: #4fb3a3;
+    --fam-cnn-fg: #7fd0bc; --fam-cnn-bg: rgba(127,208,188,0.14);
+    --fam-resnet-fg: #7ec2de; --fam-resnet-bg: rgba(126,194,222,0.14);
+    --fam-transformer-fg: #d2aee6; --fam-transformer-bg: rgba(210,174,230,0.14);
+    --fam-rnn-fg: #a9c0ea; --fam-rnn-bg: rgba(169,192,234,0.14);
+    --fam-hybrid-fg: #edbd82; --fam-hybrid-bg: rgba(237,189,130,0.14);
+    --fam-ensemble-fg: #ec9a85; --fam-ensemble-bg: rgba(236,154,133,0.14);
+    --fam-other-fg: #c6bdb4; --fam-other-bg: rgba(198,189,180,0.14);
+    color-scheme: dark;
+  }
+  :root[data-theme="light"] {
+    --bg: #faf7f5; --surface: #ffffff; --surface-2: #f3ede8; --ink: #241f1c; --ink-soft: #6b615a;
+    --border: #e4ddd6; --accent: #0f6e63; --accent-ink: #0a4a43; --accent-line: #b65c4a; --row-hover: #f1e9e3; --top-tier: #0f6e63;
+    --fam-cnn-fg: #2f6f63; --fam-cnn-bg: rgba(47,111,99,0.12);
+    --fam-resnet-fg: #1f5c6b; --fam-resnet-bg: rgba(31,92,107,0.12);
+    --fam-transformer-fg: #6b4a85; --fam-transformer-bg: rgba(107,74,133,0.12);
+    --fam-rnn-fg: #3e5a8c; --fam-rnn-bg: rgba(62,90,140,0.12);
+    --fam-hybrid-fg: #8c5a2e; --fam-hybrid-bg: rgba(140,90,46,0.12);
+    --fam-ensemble-fg: #a24b3a; --fam-ensemble-bg: rgba(162,75,58,0.12);
+    --fam-other-fg: #6b625b; --fam-other-bg: rgba(107,98,91,0.12);
+    color-scheme: light;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "IBM Plex Sans", -apple-system, "Segoe UI", sans-serif;
+    font-size: 15px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  .page { max-width: 1180px; margin: 0 auto; padding: 0 28px 80px; }
+
+  /* ---------- Masthead ---------- */
+  .masthead {
+    position: relative;
+    padding: 56px 0 32px;
+    border-bottom: 1px solid var(--border);
+    background-image: repeating-linear-gradient(
+      to bottom,
+      transparent 0,
+      transparent 27px,
+      var(--accent-line) 27px,
+      var(--accent-line) 28px
+    );
+    background-size: 100% 28px;
+    background-position: top;
+    -webkit-mask-image: linear-gradient(to bottom, black, black 60%, transparent 100%);
+            mask-image: linear-gradient(to bottom, black, black 60%, transparent 100%);
+    opacity: 1;
+  }
+  .masthead-inner { position: relative; max-width: 1180px; margin: 0 auto; padding: 0 28px; }
+  .eyebrow {
+    font-family: "Newsreader", Georgia, serif;
+    font-style: italic;
+    font-weight: 400;
+    font-size: 17px;
+    color: var(--accent-line);
+    margin: 0 0 6px;
+    letter-spacing: 0.01em;
+  }
+  h1 {
+    font-family: "Newsreader", Georgia, serif;
+    font-weight: 500;
+    font-size: clamp(34px, 5vw, 50px);
+    line-height: 1.05;
+    margin: 0 0 14px;
+    text-wrap: balance;
+    color: var(--ink);
+  }
+  .deck {
+    max-width: 62ch;
+    font-size: 16.5px;
+    color: var(--ink-soft);
+    margin: 0 0 28px;
+  }
+  #ecg-trace { display: block; width: 100%; height: 56px; margin-bottom: 8px; }
+
+  .stat-strip {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 24px;
+    margin: 0;
+    padding: 20px 0 0;
+    border-top: 1px solid var(--border);
+  }
+  .stat-strip > div { display: flex; flex-direction: column; gap: 4px; }
+  .stat-strip dt {
+    font-size: 11.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--ink-soft);
+    font-weight: 600;
+  }
+  .stat-strip dd {
+    margin: 0;
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 22px;
+    font-weight: 500;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+  }
+  .stat-sub { font-family: "IBM Plex Sans", sans-serif; font-size: 12px; color: var(--ink-soft); font-weight: 400; }
+
+  /* ---------- Controls ---------- */
+  main { padding-top: 32px; }
+  .controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 18px;
+  }
+  #search {
+    flex: 1 1 260px;
+    min-width: 200px;
+    padding: 10px 14px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--ink);
+    font-family: inherit;
+    font-size: 14px;
+  }
+  #search:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .chip-group { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip {
+    font-family: "IBM Plex Sans", sans-serif;
+    font-size: 12.5px;
+    font-weight: 600;
+    padding: 6px 12px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--ink-soft);
+    cursor: pointer;
+    user-select: none;
+  }
+  .chip[aria-pressed="true"] {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+  .chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .scope-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--ink-soft);
+    margin-left: auto;
+    cursor: pointer;
+  }
+  .scope-toggle input { accent-color: var(--accent); width: 15px; height: 15px; }
+
+  /* ---------- Table ---------- */
+  .table-wrap {
+    overflow-x: auto;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--surface);
+  }
+  table { border-collapse: collapse; width: 100%; min-width: 860px; }
+  thead th {
+    position: sticky;
+    top: 0;
+    background: var(--surface-2);
+    text-align: left;
+    font-size: 11.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    font-weight: 600;
+    color: var(--ink-soft);
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  th.sortable { cursor: pointer; }
+  th.sortable:hover { color: var(--ink); }
+  th.sortable .arrow { margin-left: 4px; opacity: 0.4; font-size: 10px; }
+  th.sortable[data-active="true"] .arrow { opacity: 1; color: var(--accent); }
+  tbody tr.row {
+    cursor: pointer;
+    border-bottom: 1px solid var(--border);
+  }
+  tbody tr.row:hover { background: var(--row-hover); }
+  tbody tr.row[data-tier="top"] { box-shadow: inset 3px 0 0 var(--top-tier); }
+  tbody tr.row.expanded { background: var(--row-hover); }
+  td { padding: 12px 14px; vertical-align: top; font-size: 14px; }
+  td.num { font-family: "IBM Plex Mono", ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+  td.rank { width: 56px; color: var(--ink-soft); }
+  td.rank strong { color: var(--ink); font-weight: 500; }
+  td.team { font-weight: 600; max-width: 220px; }
+  td.team .aff { display: block; font-weight: 400; font-size: 12px; color: var(--ink-soft); margin-top: 2px; }
+  td.idea { max-width: 340px; color: var(--ink-soft); font-size: 13.5px; }
+  .muted { color: var(--ink-soft); font-style: italic; }
+  .na { color: var(--ink-soft); opacity: 0.6; }
+
+  .tag {
+    display: inline-block;
+    padding: 3px 9px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .code-badge {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 12px;
+    text-decoration: none;
+    padding: 3px 9px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    color: var(--ink-soft);
+  }
+  .code-badge.has-code { color: var(--accent-ink); border-color: var(--accent); }
+  a.code-badge:hover { text-decoration: underline; }
+
+  tr.detail td {
+    background: var(--surface-2);
+    padding: 22px 26px 26px;
+    border-bottom: 1px solid var(--border);
+  }
+  .detail-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 20px 28px;
+  }
+  .detail-group h3 {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--accent-line);
+    margin: 0 0 8px;
+    font-weight: 600;
+  }
+  .detail-group dl { margin: 0; display: flex; flex-direction: column; gap: 6px; }
+  .detail-group dt { font-size: 12px; color: var(--ink-soft); }
+  .detail-group dd {
+    margin: 0 0 2px;
+    font-size: 13.5px;
+    font-family: "IBM Plex Mono", monospace;
+    line-height: 1.45;
+  }
+  .detail-group dd.prose { font-family: "IBM Plex Sans", sans-serif; }
+  .detail-full { grid-column: 1 / -1; }
+  .detail-full .summary {
+    font-family: "Newsreader", Georgia, serif;
+    font-size: 17px;
+    line-height: 1.5;
+    color: var(--ink);
+    margin: 0;
+  }
+
+  .table-note { font-size: 12.5px; color: var(--ink-soft); margin: 12px 2px 0; }
+
+  /* ---------- Methodology ---------- */
+  .methodology {
+    margin-top: 56px;
+    padding-top: 28px;
+    border-top: 1px solid var(--border);
+  }
+  .methodology h2 {
+    font-family: "Newsreader", Georgia, serif;
+    font-weight: 500;
+    font-size: 24px;
+    margin: 0 0 14px;
+  }
+  .methodology p { max-width: 68ch; color: var(--ink-soft); font-size: 14.5px; }
+  .methodology ul { max-width: 68ch; color: var(--ink-soft); font-size: 14.5px; padding-left: 20px; }
+  .methodology code {
+    font-family: "IBM Plex Mono", monospace;
+    background: var(--surface-2);
+    padding: 1px 5px;
+    border-radius: 4px;
+    font-size: 0.92em;
+  }
+  .caveat {
+    border-left: 3px solid var(--accent-line);
+    padding: 4px 0 4px 16px;
+    margin: 16px 0;
+    max-width: 68ch;
+  }
+  .caveat strong { color: var(--ink); }
+
+  .colophon {
+    margin-top: 40px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+    font-size: 12.5px;
+    color: var(--ink-soft);
+  }
+
+  @media (max-width: 640px) {
+    .stat-strip { grid-template-columns: repeat(2, minmax(0,1fr)); }
+    .page { padding: 0 16px 60px; }
+    .masthead-inner { padding: 0 16px; }
+  }
+</style>
+
+<div class="page">
+  <header class="masthead">
+    <div class="masthead-inner">
+      <p class="eyebrow">A literature benchmark &amp; comparative analysis</p>
+      <h1>PulseDecoder Benchmark</h1>
+      <canvas id="ecg-trace" aria-hidden="true"></canvas>
+      <p class="deck">Every scoreable team entry from the 2020 PhysioNet/Computing in Cardiology Challenge on 12-lead ECG classification, extracted from its paper into one comparable record — architecture, inputs, training regime, and the one idea each team staked its result on.</p>
+      <dl class="stat-strip">
+        <div><dt>Team entries</dt><dd id="stat-teams">–</dd></div>
+        <div><dt>Architecture families</dt><dd id="stat-families">–</dd></div>
+        <div><dt>Top challenge score</dt><dd id="stat-top">–</dd></div>
+        <div><dt>Scoring metric</dt><dd style="font-size:15px; line-height:1.3;">Weighted Challenge metric<br><span class="stat-sub">a custom scored accuracy, not raw accuracy</span></dd></div>
+      </dl>
+    </div>
+  </header>
+
+  <main>
+    <div class="controls">
+      <input id="search" type="search" placeholder="Search team, institution, or technique…" aria-label="Search papers">
+      <div class="chip-group" id="family-filters" role="group" aria-label="Filter by architecture family"></div>
+      <label class="scope-toggle">
+        <input type="checkbox" id="scope-toggle">
+        Include challenge-overview &amp; out-of-scope papers
+      </label>
+    </div>
+
+    <div class="table-wrap">
+      <table id="paper-table">
+        <thead>
+          <tr>
+            <th class="sortable" data-sort="official_rank">Rank <span class="arrow">▲</span></th>
+            <th class="sortable" data-sort="team_name">Team <span class="arrow">▲</span></th>
+            <th class="sortable" data-sort="official_challenge_metric_score">Score <span class="arrow">▲</span></th>
+            <th>Architecture</th>
+            <th>Leads</th>
+            <th>Key idea</th>
+            <th>Code</th>
+          </tr>
+        </thead>
+        <tbody id="table-body"></tbody>
+      </table>
+    </div>
+    <p class="table-note" id="result-count"></p>
+
+    <section class="methodology">
+      <h2>Methodology &amp; caveats</h2>
+      <p>Each record was extracted directly from its paper's PDF by an LLM agent following a shared rubric (<code>benchmark/rubric.md</code>), covering result metrics, model architecture, input/preprocessing, training data and regime, and a plain-language contribution summary. Fields not explicitly stated in a paper are marked <code>not reported</code> rather than inferred or guessed. A sample of records was cross-checked against source PDFs after extraction.</p>
+      <div class="caveat">
+        <strong>Two rank collisions exist in the source literature.</strong> CinC2020-134 and CinC2020-225 each self-report placing <em>16th of 41</em>; CinC2020-185 and CinC2020-198 each self-report placing <em>24th of 41</em>. Both papers in each pair state this explicitly in their own text — this benchmark preserves each paper's claim rather than arbitrating between them, since no authoritative per-team leaderboard table was recoverable from the challenge overview paper (the official scores live in an external results CSV, not the PDF).
+      </div>
+      <div class="caveat">
+        <strong>Not every score is on the same footing.</strong> Several teams could not get a working submission scored on the official hidden test set and report only cross-validation or internal-validation numbers instead — these are captured under each record's self-reported metrics with <code>official_rank</code> left as <code>not reported</code>, rather than being mixed into the ranked comparison.
+      </div>
+      <p>Two papers in the source set are not team entries and are excluded from the default view: <strong>2020ChallengePaper.pdf</strong> and <strong>CinC2020-236.pdf</strong> are both organizer overview papers describing the Challenge itself (the latter a shorter companion write-up by the same authors). <strong>CinC2020-340.pdf</strong> is unrelated — a system built for the 2018 PhysioNet Challenge, published in the same proceedings volume. Toggle "Include challenge-overview &amp; out-of-scope papers" above to see all 42 source files.</p>
+    </section>
+  </main>
+
+  <footer class="colophon">
+    <p>42 source PDFs in <code>papers/</code> → 42 extracted records in <code>benchmark/data/</code> → merged into <code>benchmark/all_papers.json</code>. Built for the PulseDecoder project.</p>
+  </footer>
+</div>
+
+<script type="application/json" id="paper-data">__PAPER_DATA_JSON__</script>
+<script>
+(function () {
+  var raw = JSON.parse(document.getElementById('paper-data').textContent);
+
+  var famClass = {
+    'CNN': 'cnn', 'ResNet': 'resnet', 'Transformer': 'transformer',
+    'RNN/LSTM': 'rnn', 'Hybrid': 'hybrid', 'Ensemble': 'ensemble', 'Other': 'other'
+  };
+
+  function esc(s) {
+    if (s === null || s === undefined) return '';
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c];
+    });
+  }
+  function isReported(v) {
+    return v !== undefined && v !== null && v !== 'not reported' && v !== '' &&
+      v !== 'not applicable — overview paper' && v !== 'not applicable' && v !== 'N/A';
+  }
+  function fmtScore(v) {
+    return typeof v === 'number' ? v.toFixed(3) : null;
+  }
+  function fmtVal(v) {
+    return isReported(v) ? esc(v) : '<span class="na">not reported</span>';
+  }
+
+  var teamRecords = raw.filter(function (r) { return r.entry_type === 'team_entry'; });
+  var families = Array.from(new Set(teamRecords.map(function (r) { return r.model.architecture_family; }))).sort();
+
+  document.getElementById('stat-teams').textContent = teamRecords.length;
+  document.getElementById('stat-families').textContent = families.length;
+  var scored = teamRecords.filter(function (r) { return typeof r.result.official_challenge_metric_score === 'number'; });
+  var top = scored.reduce(function (a, b) {
+    return (a.result.official_challenge_metric_score > b.result.official_challenge_metric_score) ? a : b;
+  }, scored[0]);
+  document.getElementById('stat-top').textContent = top ? top.result.official_challenge_metric_score.toFixed(3) : '–';
+
+  // ---- family filter chips ----
+  var activeFamilies = new Set(families);
+  var filterWrap = document.getElementById('family-filters');
+  families.forEach(function (fam) {
+    var chip = document.createElement('button');
+    chip.className = 'chip';
+    chip.type = 'button';
+    chip.textContent = fam;
+    chip.setAttribute('aria-pressed', 'true');
+    chip.addEventListener('click', function () {
+      if (activeFamilies.has(fam)) { activeFamilies.delete(fam); chip.setAttribute('aria-pressed', 'false'); }
+      else { activeFamilies.add(fam); chip.setAttribute('aria-pressed', 'true'); }
+      render();
+    });
+    filterWrap.appendChild(chip);
+  });
+
+  var sortKey = 'official_rank';
+  var sortDir = 'asc';
+  var searchVal = '';
+  var includeOther = false;
+
+  document.querySelectorAll('th.sortable').forEach(function (th) {
+    th.addEventListener('click', function () {
+      var key = th.getAttribute('data-sort');
+      if (sortKey === key) { sortDir = sortDir === 'asc' ? 'desc' : 'asc'; }
+      else { sortKey = key; sortDir = 'asc'; }
+      document.querySelectorAll('th.sortable').forEach(function (t) {
+        t.removeAttribute('data-active');
+        t.querySelector('.arrow').textContent = '▲';
+      });
+      th.setAttribute('data-active', 'true');
+      th.querySelector('.arrow').textContent = sortDir === 'asc' ? '▲' : '▼';
+      render();
+    });
+  });
+
+  document.getElementById('search').addEventListener('input', function (e) {
+    searchVal = e.target.value.trim().toLowerCase();
+    render();
+  });
+  document.getElementById('scope-toggle').addEventListener('change', function (e) {
+    includeOther = e.target.checked;
+    render();
+  });
+
+  function sortVal(r, key) {
+    if (key === 'official_rank') {
+      var v = r.result.official_rank;
+      return typeof v === 'number' ? v : Infinity;
+    }
+    if (key === 'official_challenge_metric_score') {
+      var s = r.result.official_challenge_metric_score;
+      return typeof s === 'number' ? s : -Infinity;
+    }
+    if (key === 'team_name') {
+      return (isReported(r.team_name) ? r.team_name : r.paper_id).toLowerCase();
+    }
+    return '';
+  }
+
+  function matchesSearch(r) {
+    if (!searchVal) return true;
+    var hay = [
+      r.team_name, r.paper_id, r.authors_affiliation,
+      r.model.architecture_details, r.model.key_novelty, r.contribution.summary
+    ].filter(isReported).join(' ').toLowerCase();
+    return hay.indexOf(searchVal) !== -1;
+  }
+
+  function detailGroup(title, entries) {
+    var rows = entries.map(function (e) {
+      return '<dt>' + esc(e[0]) + '</dt><dd>' + fmtVal(e[1]) + '</dd>';
+    }).join('');
+    return '<div class="detail-group"><h3>' + esc(title) + '</h3><dl>' + rows + '</dl></div>';
+  }
+
+  function renderDetail(r) {
+    var m = r.result.self_reported_metrics || {};
+    var metricEntries = ['f1','auroc','sensitivity','specificity','accuracy','other']
+      .filter(function (k) { return isReported(m[k]); })
+      .map(function (k) { return [k.toUpperCase(), m[k]]; });
+
+    var resultGroup = detailGroup('Result', [
+      ['Evaluation split', r.result.evaluation_split],
+    ].concat(metricEntries));
+
+    var modelGroup = detailGroup('Model', [
+      ['Architecture', r.model.architecture_details],
+    ]);
+
+    var inputGroup = detailGroup('Input', [
+      ['Leads used', r.input.leads_used],
+      ['Window / length', r.input.signal_length_window],
+      ['Sampling rate', r.input.sampling_rate],
+      ['Preprocessing', r.input.preprocessing],
+    ]);
+
+    var dataGroup = detailGroup('Data', [
+      ['Training datasets', r.data.training_datasets],
+      ['Class imbalance', r.data.class_imbalance_handling],
+      ['Augmentation', r.data.augmentation_techniques],
+    ]);
+
+    var trainingGroup = detailGroup('Training', [
+      ['Loss function', r.training.loss_function],
+      ['Optimizer', r.training.optimizer],
+      ['Cross-validation', r.training.cross_validation_strategy],
+      ['Hardware', r.training.hardware],
+    ]);
+
+    var authorGroup = detailGroup('Attribution', [
+      ['Authors / affiliation', r.authors_affiliation],
+      ['Source', r.paper_id + '.pdf'],
+    ]);
+
+    var novelty = isReported(r.model.key_novelty) ? r.model.key_novelty : r.contribution.summary;
+
+    return (
+      '<div class="detail-grid">' +
+      '<div class="detail-group detail-full"><h3>Key novelty</h3><p class="summary">' + esc(novelty) + '</p></div>' +
+      resultGroup + modelGroup + inputGroup + dataGroup + trainingGroup + authorGroup +
+      '</div>'
+    );
+  }
+
+  function render() {
+    var pool = includeOther ? raw : teamRecords;
+    var rows = pool.filter(function (r) {
+      if (r.entry_type === 'team_entry' && !activeFamilies.has(r.model.architecture_family)) return false;
+      return matchesSearch(r);
+    });
+
+    rows.sort(function (a, b) {
+      var av = sortVal(a, sortKey), bv = sortVal(b, sortKey);
+      if (av < bv) return sortDir === 'asc' ? -1 : 1;
+      if (av > bv) return sortDir === 'asc' ? 1 : -1;
+      return 0;
+    });
+
+    var tbody = document.getElementById('table-body');
+    tbody.innerHTML = '';
+
+    rows.forEach(function (r, i) {
+      var tr = document.createElement('tr');
+      tr.className = 'row';
+      var rank = r.result.official_rank;
+      var isTop = typeof rank === 'number' && rank <= 5;
+      if (isTop) tr.setAttribute('data-tier', 'top');
+
+      var scoreStr = fmtScore(r.result.official_challenge_metric_score);
+      var famKey = famClass[r.model.architecture_family] || 'other';
+      var famLabel = r.entry_type === 'team_entry'
+        ? '<span class="tag" style="color:var(--fam-' + famKey + '-fg); background:var(--fam-' + famKey + '-bg)">' + esc(r.model.architecture_family) + '</span>'
+        : '<span class="tag" style="color:var(--ink-soft); background:var(--surface-2)">' + (r.entry_type === 'challenge_overview' ? 'Overview paper' : 'Out of scope') + '</span>';
+
+      var code = r.contribution.code_available === true
+        ? '<a class="code-badge has-code" href="' + esc(r.contribution.code_url) + '" target="_blank" rel="noopener">code ↗</a>'
+        : '<span class="code-badge">none</span>';
+
+      var teamLabel = isReported(r.team_name) ? r.team_name : r.paper_id;
+      var affSnippet = isReported(r.authors_affiliation) ? r.authors_affiliation.split(',').slice(-1)[0].trim() : '';
+
+      tr.innerHTML =
+        '<td class="rank num">' + (typeof rank === 'number' ? '<strong>#' + rank + '</strong>' : '<span class="na">—</span>') + '</td>' +
+        '<td class="team">' + esc(teamLabel) + (affSnippet ? '<span class="aff">' + esc(affSnippet) + '</span>' : '') + '</td>' +
+        '<td class="num">' + (scoreStr ? scoreStr : '<span class="na">—</span>') + '</td>' +
+        '<td>' + famLabel + '</td>' +
+        '<td>' + fmtVal(r.input.leads_used) + '</td>' +
+        '<td class="idea">' + esc((r.model.key_novelty && isReported(r.model.key_novelty)) ? r.model.key_novelty : (r.contribution.summary || '')) + '</td>' +
+        '<td>' + code + '</td>';
+
+      tr.addEventListener('click', function () {
+        detailTr.hidden = !detailTr.hidden;
+        tr.classList.toggle('expanded', !detailTr.hidden);
+      });
+
+      var detailTr = document.createElement('tr');
+      detailTr.className = 'detail';
+      detailTr.hidden = true;
+      var td = document.createElement('td');
+      td.colSpan = 7;
+      td.innerHTML = renderDetail(r);
+      detailTr.appendChild(td);
+
+      tbody.appendChild(tr);
+      tbody.appendChild(detailTr);
+    });
+
+    var teamCount = rows.filter(function (r) { return r.entry_type === 'team_entry'; }).length;
+    document.getElementById('result-count').textContent =
+      'Showing ' + teamCount + ' of ' + teamRecords.length + ' team entries' +
+      (includeOther ? ' (+ ' + (rows.length - teamCount) + ' overview/out-of-scope)' : '') + '. Click a row to expand full details.';
+  }
+
+  // default: sort by rank asc
+  document.querySelector('th[data-sort="official_rank"]').setAttribute('data-active', 'true');
+  render();
+
+  // ---- decorative ECG trace, drawn once ----
+  var canvas = document.getElementById('ecg-trace');
+  function drawTrace() {
+    var dpr = window.devicePixelRatio || 1;
+    var rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    var ctx = canvas.getContext('2d');
+    ctx.scale(dpr, dpr);
+    ctx.clearRect(0, 0, rect.width, rect.height);
+    var style = getComputedStyle(document.documentElement);
+    ctx.strokeStyle = style.getPropertyValue('--accent-line').trim();
+    ctx.lineWidth = 1.6;
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+
+    var w = rect.width, h = rect.height, mid = h * 0.62;
+    var beat = w / 3.1;
+    ctx.beginPath();
+    ctx.moveTo(0, mid);
+    for (var i = 0; i < 4; i++) {
+      var x0 = i * beat;
+      ctx.lineTo(x0 + beat * 0.12, mid);
+      ctx.lineTo(x0 + beat * 0.18, mid - h * 0.08);
+      ctx.lineTo(x0 + beat * 0.24, mid + h * 0.04);
+      ctx.lineTo(x0 + beat * 0.30, mid);
+      ctx.lineTo(x0 + beat * 0.36, mid);
+      ctx.lineTo(x0 + beat * 0.40, mid - h * 0.55);
+      ctx.lineTo(x0 + beat * 0.44, mid + h * 0.42);
+      ctx.lineTo(x0 + beat * 0.48, mid - h * 0.06);
+      ctx.lineTo(x0 + beat * 0.54, mid);
+      ctx.lineTo(x0 + beat * 0.68, mid);
+      ctx.lineTo(x0 + beat * 0.76, mid - h * 0.16);
+      ctx.lineTo(x0 + beat * 0.86, mid);
+      ctx.lineTo(x0 + beat * 1.0, mid);
+    }
+    ctx.stroke();
+  }
+  drawTrace();
+  window.addEventListener('resize', drawTrace);
+})();
+</script>

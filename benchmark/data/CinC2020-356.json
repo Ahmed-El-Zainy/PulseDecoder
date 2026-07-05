@@ -1,0 +1,51 @@
+{
+  "paper_id": "CinC2020-356",
+  "team_name": "Heartly-AI",
+  "authors_affiliation": "Philipp Sodmann, Marcus Vollmer; Institute of Bioinformatics, University Medicine Greifswald / DZHK (German Centre for Cardiovascular Research), Greifswald, Germany",
+
+  "result": {
+    "official_challenge_metric_score": 0.136,
+    "official_rank": 28,
+    "evaluation_split": "official hidden test set (28th of 41 teams); also report a 5-fold cross-validation challenge metric of 0.113 on the training data",
+    "self_reported_metrics": {
+      "f1": "not reported",
+      "auroc": "not reported",
+      "sensitivity": "not reported",
+      "specificity": "not reported",
+      "accuracy": "not reported",
+      "other": "On a validation split, only 8 of 24 scored classes reached F1 > 0.5; best per-class F1: atrial fibrillation 0.87, sinus rhythm 0.82, left bundle branch block 0.77. Segmentation sub-network achieved F1 up to 0.98 (QRS-complex, 20ms tolerance), 0.99 (P-wave, 20ms tolerance) and 0.88 (T-wave, 20ms tolerance) on a held-out annotated test split; R-peak F1 of 0.943 at 150ms tolerance on MIT-BIH."
+    }
+  },
+
+  "model": {
+    "architecture_family": "Hybrid",
+    "architecture_details": "Two-stage pipeline: (1) a UNet-like fully convolutional 1D network (4 down/upsampling levels with skip connections, 50% dropout in bottleneck layers, batchnorm + Mish activation) accepts variable-length 12-lead input and segments the ECG into P-wave/QRS-complex/T-wave regions while also classifying each QRS complex as normal, supraventricular, or ventricular extrasystole; (2) 54 hand-crafted features (timing intervals, wave amplitudes, Frank-lead vectorcardiographic angles, extrasystole proportions) derived from the segmentation output are classified with an XGBoost gradient-boosted-tree model (24 non-exclusive labels).",
+    "key_novelty": "Uses a UNet segmentation network to produce human-interpretable intermediate ECG delineations (P/QRS/T boundaries and beat classification) and derives classical clinical features from these segments for downstream tree-based classification, prioritizing explainability over an end-to-end black-box classifier."
+  },
+
+  "input": {
+    "leads_used": "12",
+    "signal_length_window": "Arbitrary length (network input shape (None, 12) accepts ECGs of any duration); manually annotated training/validation/test snippets were up to 20s",
+    "sampling_rate": "500 Hz (resampled)",
+    "preprocessing": "Resampled to 500Hz via FFT; bandpass filtered 0.05-42Hz; discrete wavelet transform (Daubechies Db4) with hard thresholding applied as a high-pass filter to remove residual baseline wander"
+  },
+
+  "data": {
+    "training_datasets": "Official Challenge training data (all sources) for the XGBoost classifier; the UNet segmentation network was trained on a custom-built annotated corpus (573 train / 94 validation / 73 test ECGs, built via an in-house annotation tool, one physician annotator); a separate 740-ECG annotated set was used in a preliminary auxiliary-output experiment not included in the final submission",
+    "class_imbalance_handling": "not reported",
+    "augmentation_techniques": "not reported"
+  },
+
+  "training": {
+    "loss_function": "Tversky loss (segmentation output); categorical cross-entropy (extrasystole classification output)",
+    "optimizer": "Rectified Adam with LookAhead (Ranger); cosine-annealing learning-rate decay to zero after epoch 140; trained for 200 epochs total",
+    "cross_validation_strategy": "5-fold cross-validation (via hyperopt tree-structured Parzen estimators) used to tune XGBoost hyperparameters; UNet trained/validated/tested on fixed manually annotated splits (573/94/73 ECGs)",
+    "hardware": "not reported"
+  },
+
+  "contribution": {
+    "summary": "Proposes a two-step, explainable pipeline that first segments 12-lead ECGs into P/QRS/T waves and beat types with a UNet, then extracts classical clinical features from the segmentation for XGBoost classification, trading raw classification performance for interpretability.",
+    "code_available": "not reported",
+    "code_url": "not reported"
+  }
+}

@@ -1,0 +1,51 @@
+{
+  "paper_id": "CinC2020-307",
+  "team_name": "SBU_AI",
+  "authors_affiliation": "Ibrahim Hammoud, IV Ramakrishnan, Petar M. Djurić (Stony Brook University, Stony Brook, US)",
+
+  "result": {
+    "official_challenge_metric_score": 0.024,
+    "official_rank": "not reported (submission was not officially ranked due to omissions in the submission)",
+    "evaluation_split": "official hidden full test set (score 0.024); paper also separately reports an internal 'challenge validation score' of 0.416 and a per-database breakdown of the full test set",
+    "self_reported_metrics": {
+      "f1": "not reported",
+      "auroc": "not reported",
+      "sensitivity": "not reported",
+      "specificity": "not reported",
+      "accuracy": "not reported",
+      "other": "Internal validation score (challenge metric) = 0.416. Per-database full test set challenge scores (Table 4): database 1 = 0.513, database 2 = 0.016, and a row labeled 'database 2' again = -0.028 (likely a typo for a third database in the original table)."
+    }
+  },
+
+  "model": {
+    "architecture_family": "RNN/LSTM",
+    "architecture_details": "Per-heartbeat feature vectors (discrete-time Fourier transform energy over 0-10Hz, inter-beat interval duration, plus static features: heart rate, IBI mean/std of differences, age, sex, signal gain) are projected via an embedding matrix and fed into a bidirectional LSTM (hidden dimension 256, input embedding dimension 512). The bidirectional LSTM outputs form attention vectors over the heartbeat embeddings; the resulting attention output feeds a final feed-forward layer with a sigmoid activation to produce multi-label probabilities across 24 classes.",
+    "key_novelty": "Combines intra-heartbeat frequency-domain features (via discrete-time Fourier transform per beat) with an inter-heartbeat attention mechanism built on a bidirectional LSTM, allowing the model to weigh individual heartbeats' contribution to each diagnostic label."
+  },
+
+  "input": {
+    "leads_used": "12 (all 12 leads used by a custom heuristic to select the best-quality lead for R-peak/heart-rate detection)",
+    "signal_length_window": "10-second window extracted from the middle of each recording, with up to a maximum of 10 heartbeats processed per recording",
+    "sampling_rate": "not reported",
+    "preprocessing": "All challenge datasets merged into one 43,101-recording set; 10s window taken from the signal middle; custom peak-detection pipeline selects the lead with the most prominent peaks via a gradient-ratio heuristic, estimates approximate heart rate via autocorrelation of the lead's derivative, then detects R-peaks using adaptive minimum-distance and prominence thresholds tuned to >99% accuracy on 50 sampled signals; per-heartbeat DTFT and static patient/signal features are then extracted"
+  },
+
+  "data": {
+    "training_datasets": "All official Challenge 2020 training datasets merged into one combined dataset (43,101 12-lead ECGs total); no external data reported",
+    "class_imbalance_handling": "not reported",
+    "augmentation_techniques": "not reported"
+  },
+
+  "training": {
+    "loss_function": "Binary cross-entropy, averaged over all 24 class outputs",
+    "optimizer": "not reported (the specific gradient optimizer algorithm is not named); learning rate, gradient clip norm, L1/L2 regularization coefficients, and dropout rate were tuned via Bayesian optimization using Hyperopt over 40 trials",
+    "cross_validation_strategy": "Training data split 70%/30% into training and validation sets for hyperparameter tuning (40 Hyperopt trials); best-performing configuration then retrained on the full dataset before submission; classification thresholds per class tuned separately via 200 Bayesian-optimization trials on the training set",
+    "hardware": "not reported"
+  },
+
+  "contribution": {
+    "summary": "Proposes representing each ECG as a sequence of per-heartbeat frequency-domain (DTFT) embeddings processed by a bidirectional LSTM with an inter-heartbeat attention mechanism, so the network learns which heartbeats matter most for each label; the submitted model generalized poorly to the hidden test set (score 0.024) and was not officially ranked due to submission omissions.",
+    "code_available": "not reported",
+    "code_url": "not reported"
+  }
+}

@@ -1,0 +1,51 @@
+{
+  "paper_id": "CinC2020-305",
+  "team_name": "ELBIT",
+  "authors_affiliation": "Álvaro Huerta, Arturo Martinez-Rodrigo, Raúl Alcaraz (University of Castilla-La Mancha, Cuenca, Spain); José J Rieta (BioMIT.org, Universitat Politècnica de Valencia, Spain)",
+
+  "result": {
+    "official_challenge_metric_score": "not reported",
+    "official_rank": "not reported",
+    "evaluation_split": "official hidden test set from the first phase of the Challenge only (team states it was unable to participate in the final phase); metrics reported are the phase-1 class-weighted F-score (Fβ) and generalized Jaccard measure (Gβ), not the final official weighted-accuracy challenge metric",
+    "self_reported_metrics": {
+      "f1": "not reported",
+      "auroc": "not reported",
+      "sensitivity": "not reported",
+      "specificity": "not reported",
+      "accuracy": "not reported",
+      "other": "Class-weighted F-score (Fβ) = 0.933 and generalized Jaccard measure (Gβ) = 0.811 on an unofficial validation of 3,000 randomly selected training-subset signals; Fβ = 0.654 and Gβ = 0.372 on the official phase-1 hidden test set. Team did not participate in the Challenge's final phase."
+    }
+  },
+
+  "model": {
+    "architecture_family": "CNN",
+    "architecture_details": "8-layer CNN trained from scratch on 2-D continuous-Wavelet-transform scalogram images (200×1000×3 input) generated per heartbeat; architecture includes a 7×7 convolution layer, a normalization layer, ReLU activation, a pooling layer, a fully-connected layer (9 output neurons), and a softmax output; per-beat class probabilities are averaged across all beats in a recording to assign a primary diagnosis (and secondary diagnoses for classes averaging >10% probability).",
+    "key_novelty": "Segments every beat in the 12-lead ECG, concatenates the same beat across all 12 leads into one signal, then converts it into a 2-D time-frequency image (scalogram) via continuous Wavelet transform (Morlet mother wavelet, 48 voices/octave) before CNN classification, enabling beat-to-beat primary and secondary diagnosis."
+  },
+
+  "input": {
+    "leads_used": "12",
+    "signal_length_window": "Per-beat window centered on each detected R-peak, concatenated sequentially across all 12 leads to form one signal per beat",
+    "sampling_rate": "Varies by source database (500 Hz for CPSC/PTB-XL/Georgia data, 257 Hz for St Petersburg INCART, 1 kHz for PTB); not resampled to a common rate as reported",
+    "preprocessing": "Pan & Tompkins algorithm applied to raw lead I to detect R-peaks and compute mean RR interval, defining a time window per beat; window applied to remaining leads and beats concatenated across leads; resulting signal transformed into a 2-D wavelet scalogram via continuous Wavelet transform (CWT) with a Morlet mother wavelet and 48 voices per octave"
+  },
+
+  "data": {
+    "training_datasets": "All official 2020 Challenge training databases (CPSC 2018, St Petersburg INCART, PTB, PTB-XL, Georgia); 130,627 individual beats randomly extracted for training, covering 9 classes (only 9 of the 27 scored diagnoses were present in the initial-phase training data used)",
+    "class_imbalance_handling": "not reported (Table 1 shows an uneven number of beats per class, ranging from 3,190 to 27,856, but no specific balancing technique is described)",
+    "augmentation_techniques": "not reported"
+  },
+
+  "training": {
+    "loss_function": "not reported",
+    "optimizer": "Stochastic gradient descent with momentum 0.9, learning rate 0.001, mini-batches of 100 samples, trained for 20 epochs",
+    "cross_validation_strategy": "not reported (unofficial validation performed on 3,000 randomly selected training-subset signals rather than a formal CV scheme)",
+    "hardware": "not reported"
+  },
+
+  "contribution": {
+    "summary": "Proposes a beat-to-beat ECG classification pipeline that segments and concatenates single heartbeats across all 12 leads, converts each into a wavelet scalogram image, and classifies it with a CNN, averaging beat-level probabilities to detect both primary and secondary abnormalities — though performance dropped substantially from the training-subset validation to the official hidden test set.",
+    "code_available": "not reported",
+    "code_url": "not reported"
+  }
+}

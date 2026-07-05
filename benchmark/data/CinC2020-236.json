@@ -1,0 +1,51 @@
+{
+  "paper_id": "CinC2020-236",
+  "team_name": "N/A — challenge overview paper",
+  "authors_affiliation": "Matthew A. Reyna, Erick A. Perez Alday, Annie Gu, Chengyu Liu, Salman Seyedi, Ali Bahrami Rad, Andoni Elola, Qiao Li, Ashish Sharma, Gari D. Clifford; Dept. of Biomedical Informatics, Emory University, USA; School of Instrument Science and Engineering, Southeast University, China; Dept. of Communications Engineering, University of the Basque Country, Spain; Dept. of Biomedical Engineering, Georgia Institute of Technology, USA",
+
+  "result": {
+    "official_challenge_metric_score": "not reported",
+    "official_rank": "not reported",
+    "evaluation_split": "not applicable — overview paper reports aggregate challenge-wide statistics and the official top-10 leaderboard rather than a single team's evaluation",
+    "self_reported_metrics": {
+      "f1": "not reported",
+      "auroc": "not reported",
+      "sensitivity": "not reported",
+      "specificity": "not reported",
+      "accuracy": "not reported",
+      "other": "Aggregate Challenge statistics (not a per-team metric): 217 teams submitted 1395 algorithm attempts, of which 707 were successful; 41 teams qualified for official ranking. Algorithms performed roughly 10% worse on the hidden test data than on validation data on average. Official top-10 leaderboard (Table 2): 1. prna 0.533; 2. Between a ROC and a heart place 0.520; 3. HeartBeats 0.514; 4. Triage 0.485; 5. Sharif AI Team 0.437; 6. DSAIL SNU 0.420; 7. UMCUVA 0.417; 8. CQUPT ECG 0.411; 9. ECU 0.382; 10. PALab 0.359 (only the top 10 of 41 ranked teams are given in this paper, not the full 41-team table)."
+    }
+  },
+
+  "model": {
+    "architecture_family": "not applicable — overview paper",
+    "architecture_details": "not applicable — overview paper",
+    "key_novelty": "not applicable — overview paper"
+  },
+
+  "input": {
+    "leads_used": "not applicable — overview paper",
+    "signal_length_window": "not applicable — overview paper",
+    "sampling_rate": "not applicable — overview paper",
+    "preprocessing": "not applicable — overview paper"
+  },
+
+  "data": {
+    "training_datasets": "not applicable — overview paper",
+    "class_imbalance_handling": "not applicable — overview paper",
+    "augmentation_techniques": "not applicable — overview paper"
+  },
+
+  "training": {
+    "loss_function": "not applicable — overview paper",
+    "optimizer": "not applicable — overview paper",
+    "cross_validation_strategy": "not applicable — overview paper",
+    "hardware": "not applicable — overview paper"
+  },
+
+  "contribution": {
+    "summary": "This is the 4-page CinC2020 conference companion paper (DOI 10.22489/CinC.2020.236) to the PhysioNet/Computing in Cardiology Challenge 2020 overview, written by the challenge organizers rather than a competing team. It defines the task of multi-label classification of 12-lead ECG recordings into cardiac abnormalities (66,361 recordings sourced from five hospital systems in four countries; 43,101 shared publicly; 111 total diagnoses, 27 of which were officially scored) and introduces the Challenge's novel scoring metric: a cardiologist-defined reward matrix that gives partial credit to misdiagnoses with clinically similar treatments/outcomes, normalized so an always-correct classifier scores 1 and an always-inactive classifier scores 0. Reports that 217 teams submitted 1395 algorithms, 41 qualified for final ranking, and lists the official top-10 leaderboard.",
+    "code_available": true,
+    "code_url": "https://physionetchallenges.github.io/2020/ ; official results at https://github.com/physionetchallenges/evaluation-2020"
+  }
+}

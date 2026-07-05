@@ -1,0 +1,51 @@
+{
+  "paper_id": "CinC2020-148",
+  "team_name": "easyG",
+  "authors_affiliation": "Martin Baumgartner, Alphons Eggerth, Andreas Ziegl, Dieter Hayn, Günter Schreier; AIT Austrian Institute of Technology, Graz, Austria",
+
+  "result": {
+    "official_challenge_metric_score": -0.290,
+    "official_rank": 39,
+    "evaluation_split": "official hidden test set (score obtained with a trimmed, generic single-DNN submission made due to technical difficulties); the full multi-stream approach was only evaluated offline via 5-fold cross-validation on the 6 public training datasets",
+    "self_reported_metrics": {
+      "f1": "not reported",
+      "auroc": "not reported",
+      "sensitivity": "not reported",
+      "specificity": "not reported",
+      "accuracy": "not reported",
+      "other": "Official validation score of 0.403 for the trimmed generic-DNN submission (ranked 39th of 41 on test); offline 5-fold CV weighted-average challenge metric of 0.612 for the full multi-stream (combined) model across the 6 public training datasets (vs. 0.608 for features-only and 0.571 for signals-only variants)"
+    }
+  },
+
+  "model": {
+    "architecture_family": "Hybrid",
+    "architecture_details": "Multi-stream network with two parallel branches concatenated by a final sigmoid-activated fully connected classification layer: (1) a feature stream — hand-crafted per-lead features (averaged beat, beat, atrial, rhythm, signal, QRS, and meta categories, 386 features total) fed into a 2-layer MLP (1024 nodes, dropout 0.08; then 128 nodes, dropout 0.1; leaky ReLU + batch normalization per layer); (2) a deep convolutional stream based on the 2018 CPSC-challenge winning model — 5 sequential 1D-convolutional blocks (each with three 1D-conv layers, 12 filters, kernel sizes 3/3/24 except kernel 48 in the final block, leaky ReLU, dropout 0.2), followed by a bidirectional GRU (20 nodes, dropout 0.2), an attention layer, and batch normalization. Separate models were trained per data source and combined via an ensemble with majority voting.",
+    "key_novelty": "Concatenates a hand-engineered-feature MLP stream with a raw-signal deep CNN+BiGRU+attention stream into one jointly trained multi-stream model, and trains separate per-dataset-source models combined via ensemble majority voting to handle heterogeneous labeling pools across data sources."
+  },
+
+  "input": {
+    "leads_used": "12",
+    "signal_length_window": "not reported",
+    "sampling_rate": "not reported",
+    "preprocessing": "Raw signals filtered with a 2nd-order Butterworth bandpass filter (0.1-30 Hz) before the convolutional stream; a separate hand-crafted feature-extraction pipeline (386 per-lead features across 7 categories, per prior work [Kropf et al.]) supplies the MLP stream"
+  },
+
+  "data": {
+    "training_datasets": "All 6 official challenge training sources: CPSC (6,877), CPSC-Extra (3,453), INCART (74), PTB (516), PTB-XL (21,837), Georgia (10,344); no external (non-challenge) data reported",
+    "class_imbalance_handling": "Separate model trained per data source to account for differing label pools/diagnosing criteria across sources; extremely rare classes (under 1% of total labels within a given dataset) excluded from that dataset's model to reduce class-space complexity",
+    "augmentation_techniques": "not reported"
+  },
+
+  "training": {
+    "loss_function": "Binary cross-entropy",
+    "optimizer": "Adam (learning rate 0.001, beta1 = 0.9)",
+    "cross_validation_strategy": "5-fold cross-validation per dataset, in 3 variations (features-only, signals-only, combined); the 4 larger datasets (CPSC, CPSC-Extra, PTB-XL, Georgia) trained for 200 epochs, the 2 smaller datasets (PTB, INCART) trained for 500 epochs",
+    "hardware": "not reported"
+  },
+
+  "contribution": {
+    "summary": "Proposes a multi-stream architecture that combines a hand-crafted-feature MLP with a raw-signal CNN+BiGRU+attention network, trained as per-data-source ensembles, and shows offline that the combined model's weighted-average challenge score (0.612) beats either single stream alone — although the official leaderboard entry was a trimmed, feature-less single-DNN submitted due to technical issues, which scored poorly (test -0.290, ranked 39th of 41).",
+    "code_available": "not reported",
+    "code_url": "not reported"
+  }
+}

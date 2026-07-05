@@ -1,0 +1,51 @@
+{
+  "paper_id": "CinC2020-281",
+  "team_name": "HeartBeats",
+  "authors_affiliation": "Zhaowei Zhu, Han Wang et al., Ping An Technology (Beijing, China) and National University of Singapore / National University Health System (Singapore)",
+
+  "result": {
+    "official_challenge_metric_score": 0.514,
+    "official_rank": 3,
+    "evaluation_split": "official hidden test set (\"full test\")",
+    "self_reported_metrics": {
+      "f1": "not reported",
+      "auroc": "not reported",
+      "sensitivity": "not reported",
+      "specificity": "not reported",
+      "accuracy": "not reported",
+      "other": "Challenge validation score 0.682 (online validation set, distinct from the 0.514 full-test/hidden score). Offline evaluation (Table 1) of the final ensembled+rule model: 20% held-out offline test 0.683, external Hefei dataset test 0.319, full training set 0.885"
+    }
+  },
+
+  "model": {
+    "architecture_family": "ResNet",
+    "architecture_details": "Ensemble of two SE-ResNet (Squeeze-and-Excitation ResNet) models — one trained on 10-second input segments, one on 30-second segments — each with residual blocks (channel progression roughly 64->128->256->512) incorporating SE blocks for adaptive channel-wise feature reweighting. Combined with a rule-based bradycardia classifier (Pan-Tompkins R-peak detection on lead I to compute R-R intervals) whose negative predictions override the deep model, and an SNR (sinus rhythm) postprocessing step that assigns the default normal class when all class predictions are negative.",
+    "key_novelty": "Ensembles SE-ResNet models operating on different input segment lengths (10s and 30s) trained with a custom multi-label 'sign loss' that down-weights easy/true-negative-dominated loss contributions, combined with a clinically derived rule-based bradycardia override to correct a class the deep model handled poorly."
+  },
+
+  "input": {
+    "leads_used": "8 (lead III, aVR, aVL, and aVF excluded from training data since they are linearly derivable from other leads via Einthoven's Law and Goldberger's equations); lead I additionally used standalone for Pan-Tompkins R-peak/R-R interval detection in the rule-based bradycardia model",
+    "signal_length_window": "Two window lengths used and ensembled: 10-second and 30-second segments (longer signals truncated, shorter signals zero-padded)",
+    "sampling_rate": "500 Hz (original data ranged 257-1000 Hz across source datasets; PTB downsampled from 1000 Hz to 500 Hz to unify sampling rate; INCART dataset excluded entirely)",
+    "preprocessing": "Biorthogonal wavelet denoising (2 and 6 vanishing moments for decomposition/reconstruction filters, refinement level 8); truncation/zero-padding to fixed 10s or 30s length; PTB resampled to 500 Hz"
+  },
+
+  "data": {
+    "training_datasets": "Official challenge training data from CPSC, CPSC2, PTB, PTB-XL, and Georgia datasets (INCART excluded); split into 30,172 training / 7,544 offline test examples; plus an external dataset from the Hefei Hi-tech Cup ECG Intelligent Competition (8-lead, 500 Hz, 10s recordings; 6,500 records with scored-class labels used as an external test set)",
+    "class_imbalance_handling": "Custom multi-label 'sign loss' multiplying binary cross-entropy by a coefficient <1 for easily/correctly classified (true-negative-heavy) labels, emphasizing the loss contribution from misclassified/rare labels; CPSC dataset (originally labeled with only 9 classes) was relabeled by adding high-confidence predictions from a baseline model for classes among the 27 scored classes, validated by clinician review of a sample",
+    "augmentation_techniques": "not reported"
+  },
+
+  "training": {
+    "loss_function": "Custom multi-label 'sign loss' (binary cross-entropy weighted by a per-prediction sign coefficient)",
+    "optimizer": "Adam; learning rate 0.001, rescheduled to 0.0001 at the 13th epoch",
+    "cross_validation_strategy": "not reported (single 80/20 train/offline-test split, no k-fold cross-validation); optimal binarization threshold of 0.36 selected on the offline test set",
+    "hardware": "Machine with 117 GB RAM, 4-core CPU, and one NVIDIA V100 GPU; trained for 19 epochs, batch size 16"
+  },
+
+  "contribution": {
+    "summary": "Ensembles two SE-ResNet models operating on 10s and 30s ECG segments, trained with a custom class-imbalance-aware 'sign loss', and combines them with a clinical rule-based bradycardia corrector; also relabels the CPSC dataset's missing labels and validates on an external Hefei dataset to improve generalizability.",
+    "code_available": "not reported",
+    "code_url": "not reported"
+  }
+}

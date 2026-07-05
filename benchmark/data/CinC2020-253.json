@@ -1,0 +1,51 @@
+{
+  "paper_id": "CinC2020-253",
+  "team_name": "UMCUVA",
+  "authors_affiliation": "Max N Bos, Rutger R van de Leur et al., University Medical Center Utrecht, University of Amsterdam, Netherlands Heart Institute, and Central Military Hospital, The Netherlands",
+
+  "result": {
+    "official_challenge_metric_score": 0.417,
+    "official_rank": 7,
+    "evaluation_split": "official hidden test set",
+    "self_reported_metrics": {
+      "f1": "not reported",
+      "auroc": 0.915,
+      "sensitivity": "not reported",
+      "specificity": "not reported",
+      "accuracy": "not reported",
+      "other": "10-fold cross-validation on training data (before hidden test evaluation): AUROC 0.939 ± 0.004 and challenge metric 0.565 ± 0.005; challenge metric ranged 0.298-0.643 across the four hidden test set partitions; per-class AUROC ranged 0.751-0.992"
+    }
+  },
+
+  "model": {
+    "architecture_family": "CNN",
+    "architecture_details": "Deep 1D exponentially dilated causal convolutional network (WaveNet/TCN-style, following Franceschi et al.) composed of 7 causal convolution blocks (dilation doubling from 1 to 64 across blocks), each block using causal convolutions (kernel size 3), weight normalization, leaky ReLU, and residual connections; channels go from 12 input leads to 108 (constant for the first 6 blocks) to 216 in the final block, yielding a 383-sample receptive field; followed by 1D adaptive max pooling to squeeze the temporal dimension and a 216-to-24 linear layer with sigmoid activation for multi-label output. Final model is an ensemble of 10 models (one per 10-fold CV split).",
+    "key_novelty": "First use of exponentially dilated causal convolutions (TCN-style) for ECG classification, combined with transfer learning by pre-training on a large external physician-annotated dataset (254,044 ECGs from a different country/device manufacturer) and fine-tuning on the challenge data with the earliest convolutional blocks frozen."
+  },
+
+  "input": {
+    "leads_used": "12",
+    "signal_length_window": "up to 10s (network supports variable length via causal convolutions + adaptive pooling); signals longer than 10s truncated to the first 10s, shorter signals zero-padded per training batch",
+    "sampling_rate": "500 Hz",
+    "preprocessing": "Resampled to 500 Hz via linear interpolation; truncation to first 10 seconds for longer recordings; zero-padding per batch for shorter recordings"
+  },
+
+  "data": {
+    "training_datasets": "Official challenge training dataset (42,511 12-lead ECGs, mapped to 24 classes after combining 3 equivalent diagnosis pairs); plus an external pre-training dataset of 254,044 12-lead ECGs from University Medical Center Utrecht (UMCU), physician-annotated via a text-mining pipeline (with a held-out UMCU test set of 16,698 ECGs)",
+    "class_imbalance_handling": "Weighted focal loss: positive-class weight set to the class imbalance ratio, scaled by a tunable weighting factor (0-1) between no weighting and full weighting, plus a focal loss gamma parameter (final model: gamma=2, weighting factor=0.5)",
+    "augmentation_techniques": "not reported"
+  },
+
+  "training": {
+    "loss_function": "Weighted focal loss (multi-label)",
+    "optimizer": "Adam",
+    "cross_validation_strategy": "10-fold iterative stratification for multi-label data; best-performing model per fold selected and ensembled via mean of probability outputs; early stopping after 5 epochs without challenge-metric improvement",
+    "hardware": "NVIDIA Titan Xp GPU (donated by NVIDIA Corporation); implemented in PyTorch 1.3, Python 3.7"
+  },
+
+  "contribution": {
+    "summary": "Combines transfer learning (pre-training on 254,044 ECGs from a different country and device manufacturer) with an exponentially dilated causal convolutional network, partially freezing pre-trained weights before fine-tuning on the challenge dataset, and ensembling across 10 cross-validation folds.",
+    "code_available": "not reported",
+    "code_url": "not reported"
+  }
+}

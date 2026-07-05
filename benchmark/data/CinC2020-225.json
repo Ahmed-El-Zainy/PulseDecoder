@@ -1,0 +1,51 @@
+{
+  "paper_id": "CinC2020-225",
+  "team_name": "Cardio-Challengers",
+  "authors_affiliation": "Akash Kirodiwal, Apoorva Srivastava, Ashutosh Dash, Ayantika Saha, Gopi Vamsi Penaganti, Sawon Pratiher, Sazedul Alam, Amit Patra, Nirmalya Ghosh, Nilanjan Banerjee; Dept. of Electrical Engineering, IIT Kharagpur, India, and CSEE, University of Maryland, Baltimore County, USA",
+
+  "result": {
+    "official_challenge_metric_score": 0.258,
+    "official_rank": 16,
+    "evaluation_split": "official hidden test set (full test data); paper also separately reports a 0.337 challenge metric score on their own held-out validation dataset",
+    "self_reported_metrics": {
+      "f1": 0.116,
+      "auroc": 0.498,
+      "sensitivity": "not reported",
+      "specificity": "not reported",
+      "accuracy": "not reported",
+      "other": "Macro AUPRC = 0.072 (test), 0.060 (validation); Macro F-measure = 0.105 (validation), 0.116 (test); Macro AUROC = 0.498 (reported identically for both validation and test); fixed-threshold (0.005) challenge metric score of 0.314 vs. 0.337 with a learned per-class threshold optimizer."
+    }
+  },
+
+  "model": {
+    "architecture_family": "Hybrid",
+    "architecture_details": "1D CNN + LSTM hybrid ('bio-toolkit'): two Conv1D layers (64 filters each, kernel size 4x1, stride 1), followed by two LSTM layers (32 units then 12 units), a Flatten layer, and a densely-connected sigmoid output layer of size 27 (one per scored class), implemented in Keras.",
+    "key_novelty": "Instead of classifying raw multi-lead signal, extracts a single subject-wise averaged cardiac-cycle 'template' from Lead II only (R-peak aligned via the Hamilton algorithm, resampled to 400 samples, split into two halves and swapped, amplitude-normalized), reducing each recording to one compact denoised waveform fed into a small CNN-LSTM classifier."
+  },
+
+  "input": {
+    "leads_used": "Lead II only (of the 12 available leads)",
+    "signal_length_window": "One averaged cardiac cycle per subject, resampled to a fixed 400-sample template (not a raw time window)",
+    "sampling_rate": "not reported",
+    "preprocessing": "FIR bandpass filter, passband 3-45 Hz, applied to Lead II; R-peak detection via the Hamilton algorithm; signal segmented between R peaks; each cardiac cycle re-sampled to 400 samples and averaged per subject; resulting template split into two equal halves and swapped; amplitude-normalized to the template's maximum absolute value."
+  },
+
+  "data": {
+    "training_datasets": "Official PhysioNet/CinC2020 training set (43101 12-lead recordings; 42920 retained after removing samples with NaN template values); no external data reported",
+    "class_imbalance_handling": "not reported",
+    "augmentation_techniques": "not reported"
+  },
+
+  "training": {
+    "loss_function": "Binary cross-entropy",
+    "optimizer": "Adam, learning rate 0.005",
+    "cross_validation_strategy": "not reported — single split of available data into 64% training, 16% validation, 20% testing (not k-fold cross-validation); early stopping if loss did not decrease for 8 consecutive epochs (max 1000 epochs, batch size 256)",
+    "hardware": "not reported"
+  },
+
+  "contribution": {
+    "summary": "Proposes a lightweight 'bio-toolkit' that reduces each 12-lead ECG to a single averaged Lead-II cardiac-cycle template and classifies it with a compact 2-layer CNN + 2-layer LSTM network with a per-class optimized decision threshold, aiming for a low-complexity model suitable for real-time use.",
+    "code_available": "not reported",
+    "code_url": "not reported"
+  }
+}

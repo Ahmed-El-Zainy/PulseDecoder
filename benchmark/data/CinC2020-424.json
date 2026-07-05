@@ -1,0 +1,51 @@
+{
+  "paper_id": "CinC2020-424",
+  "team_name": "deepzx987",
+  "authors_affiliation": "Deepankar Nankani, Pallabi Saikia, Rashmi Dutta Baruah; Indian Institute of Technology Guwahati, Assam, India",
+
+  "result": {
+    "official_challenge_metric_score": -0.035,
+    "official_rank": 35,
+    "evaluation_split": "official hidden test set (full test set); paper also reports scores on a 20% holdout validation split (0.305) and stratified 10-fold cross-validation on training data (0.21±0.04)",
+    "self_reported_metrics": {
+      "f1": 0.182,
+      "auroc": 0.742,
+      "sensitivity": "not reported",
+      "specificity": "not reported",
+      "accuracy": 0.181,
+      "other": "Full test set AUPRC 0.229. Additional splits reported: validation data (AUROC 0.825, AUPRC 0.326, Accuracy 0.331, F-measure 0.286, Challenge score 0.305) and three partial 'Test Data' subsets (challenge scores 0.648, 0.25, -0.287)."
+    }
+  },
+
+  "model": {
+    "architecture_family": "ResNet",
+    "architecture_details": "8-layer 1D convolutional ResNet: 1-D convolution, batch normalization, dropout, max pooling, and skip connections; 64 filters of size 16x1, stride 1; final dense layer of 27 neurons with softmax. Weights initialized with Xavier initialization; ReLU activations; dropout probability 0.5.",
+    "key_novelty": "Systematically benchmarks 17 deep learning architectures (CNN/ResNet, RNN variants (LSTM/GRU/BiLSTM/BiGRU), CNN+RNN hybrids, and RNN/hybrid models with an attention mechanism) for concurrent arrhythmia classification, showing a simple 8-layer ResNet with skip connections outperforms far more complex recurrent and attention-augmented models while training orders of magnitude faster."
+  },
+
+  "input": {
+    "leads_used": "12",
+    "signal_length_window": "2500-sample fixed-length segments extracted from each record (original record lengths ranged from 2500 to 462600 samples)",
+    "sampling_rate": "not reported",
+    "preprocessing": "Records segmented into 2500-sample windows and labelled per the record's diagnosis; only the first label of each multi-label record was used for training and only a single class predicted per record at test time; at inference, predictions across all segments of a record were averaged and the most frequently predicted class chosen."
+  },
+
+  "data": {
+    "training_datasets": "All six official Challenge 2020 training databases (PTB-XL, PTBDB, INCART, CPSC2018, CPSC-Extra, Georgia DB); no external data",
+    "class_imbalance_handling": "not reported",
+    "augmentation_techniques": "not reported"
+  },
+
+  "training": {
+    "loss_function": "not reported",
+    "optimizer": "not reported",
+    "cross_validation_strategy": "Main dataset split 80% training / 20% validation for hyperparameter tuning; final ResNet model additionally evaluated with stratified 10-fold cross-validation; early stopping on validation accuracy (patience 5 epochs)",
+    "hardware": "Intel Xeon processor, 32 GB RAM, NVIDIA GeForce Titan Xp GPU with 12 GB GDDR6 VRAM; batch-wise training (batch size 16) via Keras generator to avoid loading full dataset into memory"
+  },
+
+  "contribution": {
+    "summary": "Benchmarks 17 deep learning architectures (CNN, RNN, CNN+RNN hybrids, and attention-augmented variants) for 12-lead ECG arrhythmia classification and shows that a simple 8-layer 1D ResNet outperforms substantially more complex RNN/attention-based and hybrid models on both challenge score and training time.",
+    "code_available": "not reported",
+    "code_url": "not reported"
+  }
+}

@@ -1,0 +1,51 @@
+{
+  "paper_id": "2020ChallengePaper",
+  "team_name": "N/A — challenge overview paper",
+  "authors_affiliation": "Erick A. Perez Alday, Annie Gu, Amit Shah, Chad Robichaux, An-Kwok Ian Wong, Chengyu Liu, Feifei Liu, Ali Bahrami Rad, Andoni Elola, Salman Seyedi, Qiao Li, Ashish Sharma, Gari D. Clifford, Matthew A. Reyna; Emory University (Dept. of Biomedical Informatics, Dept. of Epidemiology, Dept. of Medicine), Georgia Institute of Technology, Southeast University (China), Shandong Jianzhu University (China), University of the Basque Country (Spain)",
+
+  "result": {
+    "official_challenge_metric_score": "not reported",
+    "official_rank": "not reported",
+    "evaluation_split": "not applicable — overview paper reports aggregate results across multiple splits (validation set, hidden CPSC set, hidden G12EC set, hidden undisclosed set, and official hidden test set) rather than a single team's evaluation split",
+    "self_reported_metrics": {
+      "f1": "not reported",
+      "auroc": "not reported",
+      "sensitivity": "not reported",
+      "specificity": "not reported",
+      "accuracy": "not reported",
+      "other": "Aggregate Challenge statistics (not a per-team metric): 217 teams submitted 1395 algorithms; 707 successful entries overall (397 unofficial phase, 310 official phase); 70 teams' codebases fully evaluated on the test set; 41 teams qualified for the final rankings. High-performing algorithms exhibited performance drops of up to ~10% on hidden test data relative to validation; on average, scores dropped 47% from the hidden CPSC set to the hidden G12EC set, a further 57% from the hidden G12EC set to the hidden undisclosed set, and about 50% on average from the validation set to the test set. Median training time across submissions was 6 hours 49 minutes; over 70% of entries used hand-crafted/clinical features with classifiers such as SVMs, gradient boosting, random forests, and shallow neural networks rather than deep learning/CNNs."
+    }
+  },
+
+  "model": {
+    "architecture_family": "not applicable — overview paper",
+    "architecture_details": "not applicable — overview paper",
+    "key_novelty": "not applicable — overview paper"
+  },
+
+  "input": {
+    "leads_used": "not applicable — overview paper",
+    "signal_length_window": "not applicable — overview paper",
+    "sampling_rate": "not applicable — overview paper",
+    "preprocessing": "not applicable — overview paper"
+  },
+
+  "data": {
+    "training_datasets": "not applicable — overview paper",
+    "class_imbalance_handling": "not applicable — overview paper",
+    "augmentation_techniques": "not applicable — overview paper"
+  },
+
+  "training": {
+    "loss_function": "not applicable — overview paper",
+    "optimizer": "not applicable — overview paper",
+    "cross_validation_strategy": "not applicable — overview paper",
+    "hardware": "not applicable — overview paper"
+  },
+
+  "contribution": {
+    "summary": "Defines the PhysioNet/Computing in Cardiology Challenge 2020 task: multi-label classification of 12-lead ECG recordings (66,361 recordings from six hospital systems in four countries; 43,101 posted publicly) into cardiac abnormalities drawn from 111 possible diagnoses, 27 of which were officially scored. Its central contribution is a novel evaluation metric — built from an expert (cardiologist)-defined reward matrix W that gives partial credit to misdiagnoses with similar clinical treatments/outcomes and full credit only to correct diagnoses — normalized so an always-correct classifier scores 1 and an always-inactive (all-normal) classifier scores 0, replacing plain accuracy/AUC as the ranking criterion. The Challenge also required, for the first time in a public competition of this kind, that teams submit open-source code for both training and running their models to ensure reproducibility.",
+    "code_available": true,
+    "code_url": "https://physionetchallenges.github.io/2020/ ; scoring/evaluation code and official results at https://github.com/physionetchallenges/evaluation-2020"
+  }
+}

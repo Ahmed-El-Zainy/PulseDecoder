@@ -1,0 +1,51 @@
+{
+  "paper_id": "CinC2020-349",
+  "team_name": "CardioUniBo",
+  "authors_affiliation": "Davide Borra, Alice Andalò, Stefano Severi, Cristiana Corsi; DEI, Campus of Cesena, University of Bologna, Italy",
+
+  "result": {
+    "official_challenge_metric_score": "not reported",
+    "official_rank": "not reported",
+    "evaluation_split": "5-fold stratified cross-validation on the official Challenge training data (team was unable to obtain scores on the official hidden test set during the official phase of the challenge, as explicitly stated in the paper)",
+    "self_reported_metrics": {
+      "f1": "not reported",
+      "auroc": 0.9391,
+      "sensitivity": "not reported",
+      "specificity": "not reported",
+      "accuracy": "not reported",
+      "other": "Training 5-fold CV challenge metric (mean±std) and AUROC (mean±std) per architecture: InceptionTime 0.5183±0.0016 / AUROC 0.9391±0.0017 (best challenge-metric score, reported as best compromise between performance and complexity); ResNet 0.5091±0.0071 / AUROC 0.9400±0.0015 (best AUROC); XResNet1d-18 0.5127±0.0051 / 0.9335±0.0031; XResNet1d-34 0.5085±0.0051 / 0.9307±0.0026; XResNet1d-50 0.5180±0.0042 / 0.9352±0.0037; XResNet1d-101 0.5140±0.0047 / 0.9334±0.0022."
+    }
+  },
+
+  "model": {
+    "architecture_family": "CNN",
+    "architecture_details": "Benchmarks three state-of-the-art 1D CNN designs for time-series classification: InceptionTime (6 inception blocks, kernel sizes 40/20/10), ResNet (Wang et al. 1D CNN baseline, kernel size 5), and XResNet1d with 18/34/50/101 layers (kernel size 5). All share a common head: concat-pooling (concatenation of global average and max pooling) on top of the convolutional module, followed by FC-128 + batch norm + ReLU + dropout (p=0.5), then FC-27 output layer with sigmoid activation. Trainable parameter counts: 510491 (InceptionTime), 476187 (ResNet), 697499/1356955/1808795/3645339 (XResNet1d-18/34/50/101).",
+    "key_novelty": "Systematically benchmarks InceptionTime, ResNet, and XResNet time-series CNN architectures with a shared decoding head on the 2020 Challenge's multicenter 12-lead ECG data, showing InceptionTime gives the best performance-to-parameter-count trade-off."
+  },
+
+  "input": {
+    "leads_used": "12",
+    "signal_length_window": "Non-overlapping 2.5s chunks per recording (CNN input shape 12x250 at 100Hz); chunk-level probabilities averaged to obtain recording-level probabilities",
+    "sampling_rate": "Downsampled to 100 Hz",
+    "preprocessing": "Gain factor correction per lead; zero-phase 2nd-order band-pass Butterworth filter (0.5-40 Hz); downsampling to 100 Hz; per-lead standardization (z-score)."
+  },
+
+  "data": {
+    "training_datasets": "Subset of the official Challenge 2020 training data: CPSC + CPSC-Extra (6877+3453 examples), PTB-XL (21837 examples), and Georgia (10344 examples), merged into a 42511-example multicenter dataset; other official datasets excluded for not having comparable recording lengths. No external (non-Challenge) data used.",
+    "class_imbalance_handling": "not reported (beyond use of stratified 5-fold cross-validation splits)",
+    "augmentation_techniques": "Offline augmentation via non-overlapping 2.5s chunking of each 12-lead recording; online augmentation by randomly zeroing each lead signal with probability 0.5 during training, to improve robustness to recordings with zeroed-out leads."
+  },
+
+  "training": {
+    "loss_function": "Cross-entropy",
+    "optimizer": "Adam, learning rate 1e-3, batch size 32",
+    "cross_validation_strategy": "5-fold stratified cross-validation on the merged training dataset; trained up to 100 epochs with early stopping based on validation loss (20% of training set held out as validation)",
+    "hardware": "NVIDIA Titan V GPU; PyTorch framework"
+  },
+
+  "contribution": {
+    "summary": "Benchmarks three state-of-the-art 1D CNN time-series architectures (InceptionTime, ResNet, XResNet) with a common classification head on multicenter 12-lead ECG data from the 2020 Challenge, finding InceptionTime offers the best trade-off between cross-validated performance and parameter count.",
+    "code_available": "not reported",
+    "code_url": "not reported"
+  }
+}

@@ -1,0 +1,51 @@
+{
+  "paper_id": "CinC2020-297",
+  "team_name": "Cordi-Ak",
+  "authors_affiliation": "Paul Samuel Ignacio, Jay-Anne Bulauan, John Rick Manzanares; University of the Philippines Baguio, Baguio City, Philippines",
+
+  "result": {
+    "official_challenge_metric_score": -0.113,
+    "official_rank": 37,
+    "evaluation_split": "official hidden full test set (score -0.113); official challenge validation score of 0.304 also reported separately; additionally a 3-fold cross validation on the full training set was performed",
+    "self_reported_metrics": {
+      "f1": 0.255,
+      "auroc": 0.846,
+      "sensitivity": "not reported",
+      "specificity": "not reported",
+      "accuracy": 0.209,
+      "other": "3-fold CV on training set: AUPRC 0.322, challenge metric 0.219. Official validation-set scores: AUPRC 0.299, AUROC 0.815, Accuracy 0.083, F-measure 0.238, challenge metric 0.304. Per-database full test scores (Test1/Test2/Test3) also reported, ranging from challenge metric 0.254 down to -0.387. Challenge-released baseline random forest classifier scored 0.076 on the validation set for comparison."
+    }
+  },
+
+  "model": {
+    "architecture_family": "Ensemble",
+    "architecture_details": "Not a neural network: a two-level classical Random Forest classifier (max depth 20, sqrt max-features rule). Level 1 RF separates scored vs. unscored classes; Level 2 uses two separate RFs (one for scored classes with 400 features/600 trees, one for unscored classes with 200 features/200 trees), all trained on topological data analysis (TDA) features plus demographic data and RR-interval statistical moments.",
+    "key_novelty": "Uses topological data analysis (persistent homology on point-cloud embeddings of grouped ECG leads/segments) to generate mathematically computed topological signatures as a substitute for expert-informed features, feeding a two-level random forest classifier."
+  },
+
+  "input": {
+    "leads_used": "12 (used in 7 different lead groupings per segment: one grouping spans all 12 leads, others represent clinically-referenced lead subsets covering all 12 leads collectively)",
+    "signal_length_window": "Three 1800-time-point segments taken from the beginning, middle, and end of each ECG recording; each segment further downsampled to 300 equally spaced time slices per lead grouping for point cloud embedding",
+    "sampling_rate": "not reported",
+    "preprocessing": "ECG viewed as multivariate time series; segmented into 3 portions (beginning/middle/end of 1800 time points each); converted into point-cloud embeddings per lead grouping (300 equally spaced time slices); persistent homology (via Ripser) computed on point clouds to derive topological features (barcode statistics, persistence landscapes, persistence entropy for dimensions 0 and 1); supplemented with demographic data and RR-interval statistical moments (Pan-Tompkins-based, via the Challenge-supplied toolbox)"
+  },
+
+  "data": {
+    "training_datasets": "PhysioNet/Computing in Cardiology Challenge 2020 official training data (full training set used for 3-fold cross validation); no external data reported. A total of 1238 features extracted per ECG.",
+    "class_imbalance_handling": "not reported (beyond the two-level scored/unscored class split used to structure the random forest training)",
+    "augmentation_techniques": "not reported"
+  },
+
+  "training": {
+    "loss_function": "not reported (Random Forest classifier; not applicable in the neural-network loss-function sense)",
+    "optimizer": "not reported (Random Forest classifier; not applicable)",
+    "cross_validation_strategy": "3-fold cross validation on the full training set; features ranked by importance via Scikit-learn and a shortlist used for re-training at each random forest level",
+    "hardware": "not reported"
+  },
+
+  "contribution": {
+    "summary": "Proposes replacing expert-informed ECG features with mathematically computed topological signatures (via persistent homology on point-cloud embeddings of ECG lead segments) to train a two-level random forest classifier for 12-lead ECG multi-label classification, reducing reliance on expert-designed features.",
+    "code_available": "not reported",
+    "code_url": "not reported"
+  }
+}

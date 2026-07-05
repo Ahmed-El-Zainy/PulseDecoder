@@ -1,0 +1,51 @@
+{
+  "paper_id": "CinC2020-285",
+  "team_name": "ECGMaster",
+  "authors_affiliation": "Yang Liu, Kuanquan Wang, Yongfeng Yuan, Qince Li, Yacong Li, Yongpeng Xu, Henggui Zhang; Harbin Institute of Technology (HIT), Peng Cheng Laboratory, Yongjia County Public Security Bureau, University of Manchester, Southwest Medical University",
+
+  "result": {
+    "official_challenge_metric_score": "not reported",
+    "official_rank": "not reported",
+    "evaluation_split": "5-fold cross validation on the official training data only; paper explicitly states the team was unable to score/rank on the official hidden test set and that these training-set results may be over-optimistic",
+    "self_reported_metrics": {
+      "f1": "not reported",
+      "auroc": 0.9486,
+      "sensitivity": "not reported",
+      "specificity": "not reported",
+      "accuracy": "not reported",
+      "other": "5-fold CV averages: AUPRC 0.5615, F2 0.5765, G2 0.3240, challenge metric 0.5501 +/- 0.0223"
+    }
+  },
+
+  "model": {
+    "architecture_family": "Hybrid",
+    "architecture_details": "Residual CNN (9 residual blocks, each with 2 convolutional layers plus batch norm/dropout/ReLU, filter count increasing and kernel size halving every 3 blocks, down-sampled by max-pooling) feeding into a class-wise attention module based on Transformer-style scaled dot-product attention (one-hot class encodings as queries, linearly transformed local features as keys, local features as values), followed by per-class fully-connected sigmoid output layers.",
+    "key_novelty": "A class-wise attention mechanism that generates a separate attended feature vector per class (using class identities as attention queries) to reduce inter-class conflict in multi-label ECG classification, combined with a novel weighted focal loss for class imbalance."
+  },
+
+  "input": {
+    "leads_used": "12",
+    "signal_length_window": "60 seconds fixed length via random truncation or zero-padding",
+    "sampling_rate": "250 Hz (resampled from original)",
+    "preprocessing": "Amplitude scaled to a common resolution (1000/mV), resampled to 250 Hz, moving-average filter (window 250) for baseline wander removal, 3-level 'db4' wavelet transform with soft-thresholding for denoising, truncation/zero-padding to 60 seconds"
+  },
+
+  "data": {
+    "training_datasets": "PhysioNet/Computing in Cardiology Challenge 2020 official public training set (43101 ECG recordings from six databases across 4 institutions, 111 label types, 24 scored classes used); no external data reported",
+    "class_imbalance_handling": "Novel weighted focal loss with class-frequency-dependent alpha weighting terms (alpha_i,0 and alpha_i,1 based on N/(N-Ni) and N/Ni raised to tunable power b, set to b=0.5)",
+    "augmentation_techniques": "not reported (only random truncation/padding position noted, not framed as augmentation)"
+  },
+
+  "training": {
+    "loss_function": "Weighted focal loss (class-frequency-weighted extension of focal loss)",
+    "optimizer": "not reported",
+    "cross_validation_strategy": "5-fold cross validation on the training dataset",
+    "hardware": "Workstation with one CPU at 3.5 GHz, NVIDIA Quadro K6000 GPU, 64 GB memory; implemented in Keras"
+  },
+
+  "contribution": {
+    "summary": "Proposes a residual CNN combined with a Transformer-inspired class-wise attention mechanism (using class identities as attention queries) plus a weighted focal loss, to address multi-label conflicts and class imbalance in 12-lead ECG classification.",
+    "code_available": "not reported",
+    "code_url": "not reported"
+  }
+}

@@ -1,0 +1,1934 @@
+[
+  {
+    "paper_id": "CinC2020-281",
+    "team_name": "HeartBeats",
+    "authors_affiliation": "Zhaowei Zhu, Han Wang et al., Ping An Technology (Beijing, China) and National University of Singapore / National University Health System (Singapore)",
+    "result": {
+      "official_challenge_metric_score": 0.514,
+      "official_rank": 3,
+      "evaluation_split": "official hidden test set (\"full test\")",
+      "self_reported_metrics": {
+        "f1": "not reported",
+        "auroc": "not reported",
+        "sensitivity": "not reported",
+        "specificity": "not reported",
+        "accuracy": "not reported",
+        "other": "Challenge validation score 0.682 (online validation set, distinct from the 0.514 full-test/hidden score). Offline evaluation (Table 1) of the final ensembled+rule model: 20% held-out offline test 0.683, external Hefei dataset test 0.319, full training set 0.885"
+      }
+    },
+    "model": {
+      "architecture_family": "ResNet",
+      "architecture_details": "Ensemble of two SE-ResNet (Squeeze-and-Excitation ResNet) models \u2014 one trained on 10-second input segments, one on 30-second segments \u2014 each with residual blocks (channel progression roughly 64->128->256->512) incorporating SE blocks for adaptive channel-wise feature reweighting. Combined with a rule-based bradycardia classifier (Pan-Tompkins R-peak detection on lead I to compute R-R intervals) whose negative predictions override the deep model, and an SNR (sinus rhythm) postprocessing step that assigns the default normal class when all class predictions are negative.",
+      "key_novelty": "Ensembles SE-ResNet models operating on different input segment lengths (10s and 30s) trained with a custom multi-label 'sign loss' that down-weights easy/true-negative-dominated loss contributions, combined with a clinically derived rule-based bradycardia override to correct a class the deep model handled poorly."
+    },
+    "input": {
+      "leads_used": "8 (lead III, aVR, aVL, and aVF excluded from training data since they are linearly derivable from other leads via Einthoven's Law and Goldberger's equations); lead I additionally used standalone for Pan-Tompkins R-peak/R-R interval detection in the rule-based bradycardia model",
+      "signal_length_window": "Two window lengths used and ensembled: 10-second and 30-second segments (longer signals truncated, shorter signals zero-padded)",
+      "sampling_rate": "500 Hz (original data ranged 257-1000 Hz across source datasets; PTB downsampled from 1000 Hz to 500 Hz to unify sampling rate; INCART dataset excluded entirely)",
+      "preprocessing": "Biorthogonal wavelet denoising (2 and 6 vanishing moments for decomposition/reconstruction filters, refinement level 8); truncation/zero-padding to fixed 10s or 30s length; PTB resampled to 500 Hz"
+    },
+    "data": {
+      "training_datasets": "Official challenge training data from CPSC, CPSC2, PTB, PTB-XL, and Georgia datasets (INCART excluded); split into 30,172 training / 7,544 offline test examples; plus an external dataset from the Hefei Hi-tech Cup ECG Intelligent Competition (8-lead, 500 Hz, 10s recordings; 6,500 records with scored-class labels used as an external test set)",
+      "class_imbalance_handling": "Custom multi-label 'sign loss' multiplying binary cross-entropy by a coefficient <1 for easily/correctly classified (true-negative-heavy) labels, emphasizing the loss contribution from misclassified/rare labels; CPSC dataset (originally labeled with only 9 classes) was relabeled by adding high-confidence predictions from a baseline model for classes among the 27 scored classes, validated by clinician review of a sample",
+      "augmentation_techniques": "not reported"
+    },
+    "training": {
+      "loss_function": "Custom multi-label 'sign loss' (binary cross-entropy weighted by a per-prediction sign coefficient)",
+      "optimizer": "Adam; learning rate 0.001, rescheduled to 0.0001 at the 13th epoch",
+      "cross_validation_strategy": "not reported (single 80/20 train/offline-test split, no k-fold cross-validation); optimal binarization threshold of 0.36 selected on the offline test set",
+      "hardware": "Machine with 117 GB RAM, 4-core CPU, and one NVIDIA V100 GPU; trained for 19 epochs, batch size 16"
+    },
+    "contribution": {
+      "summary": "Ensembles two SE-ResNet models operating on 10s and 30s ECG segments, trained with a custom class-imbalance-aware 'sign loss', and combines them with a clinical rule-based bradycardia corrector; also relabels the CPSC dataset's missing labels and validates on an external Hefei dataset to improve generalizability.",
+      "code_available": "not reported",
+      "code_url": "not reported"
+    },
+    "entry_type": "team_entry"
+  },
+  {
+    "paper_id": "CinC2020-445",
+    "team_name": "Sharif AI Team",
+    "authors_affiliation": "Hosein Hasani, Adeleh Bitarafan, Mahdieh Soleymani Baghshah; Sharif University of Technology, Tehran, Iran",
+    "result": {
+      "official_challenge_metric_score": 0.437,
+      "official_rank": 5,
+      "evaluation_split": "official hidden test set (full test score 0.437, out of 41 teams in the final official ranking); paper also reports an official validation score of 0.609 and 5-fold cross-validation on the full training dataset (0.629\u00b10.003)",
+      "self_reported_metrics": {
+        "f1": 0.57,
+        "auroc": 0.64,
+        "sensitivity": "not reported",
+        "specificity": "not reported",
+        "accuracy": 0.46,
+        "other": "Table 1 metrics ('Ours') are measured on a 10% hold-out validation split of the training data: AUPRC 0.96, F\u03b2 0.61, G\u03b2 0.37, Challenge score 0.64. Official Challenge scores: validation 0.609, full test 0.437, 5-fold CV on full training set 0.629\u00b10.003. Leave-one-domain-out (CPSC/CPSC-Extra/PTB-XL/G12EC) evaluation: 0.352 with adversarial domain generalization vs. 0.343 without."
+      }
+    },
+    "model": {
+      "architecture_family": "Hybrid",
+      "architecture_details": "Two parallel 1D CNN branches \u2014 one with larger convolution kernels for coarse features, one with smaller kernels for fine features \u2014 each followed by max pooling and a bidirectional LSTM (128 units). The concatenated feature vectors plus age/sex attributes feed (1) a gradient-reversal layer into a 2-layer MLP domain classifier (4 domains: CPSC, CPSC-Extra, PTB-XL, G12EC) for adversarial domain generalization, and (2) 27 separate binary sigmoid classifiers (one per scored class), thresholded via grid search maximizing the challenge score.",
+      "key_novelty": "Adversarial multi-source domain generalization: a gradient-reversal domain classifier is trained jointly with the CNN-BiLSTM feature extractor to make learned features invariant across the different source ECG databases (treated as distinct 'domains'), combined with a custom class-weighted multi-label loss derived from the challenge's own reward/misclassification-penalty matrix."
+    },
+    "input": {
+      "leads_used": "12",
+      "signal_length_window": "Fixed-length input window; shorter signals randomly padded and longer signals randomly cropped during training (with occasional additional cropping/padding to vary effective length as an augmentation)",
+      "sampling_rate": "250 Hz (resampled)",
+      "preprocessing": "Resampled to 250 Hz and normalized by a constant scale; records without any of the 27 scored labels excluded from training; no explicit denoising filter applied \u2014 instead noise addition/removal is used as a data augmentation technique to increase robustness"
+    },
+    "data": {
+      "training_datasets": "Official Challenge 2020 training data; for the domain-generalization experiment, CPSC, CPSC-Extra, PTB-XL (10k-sample subset used to avoid dataset dominance), and G12EC were treated as four separate domains in a leave-one-domain-out evaluation; 5% of training data held out for validation (half for threshold tuning, half for model selection)",
+      "class_imbalance_handling": "Custom class-weighted binary cross-entropy loss using an importance/weight matrix derived from the challenge's reward matrix (Mw = 1 \u2212 W_reward + \u03b1\u00b7I); for multi-label records, the element-wise minimum across the corresponding rows of the weight matrix is used",
+      "augmentation_techniques": "Random ECG padding/cropping; randomly adding or filtering low- and high-frequency noise components; low-probability random substitution of a lead's signal with zeros or low-frequency noise; random shuffling of lead order; random inversion of one or more leads; random band-pass filtering; random amplitude scaling or offset"
+    },
+    "training": {
+      "loss_function": "Per-class weighted binary cross-entropy across 27 binary classifiers (weights derived from the challenge reward matrix), summed with an adversarial domain-classification cross-entropy loss from a gradient-reversal layer (total loss L = L_C + \u03bb\u00b7L_D)",
+      "optimizer": "not reported",
+      "cross_validation_strategy": "5-fold cross-validation on the full training dataset; additionally, leave-one-domain-out evaluation across CPSC, CPSC-Extra, PTB-XL, and G12EC treated as 4 domains",
+      "hardware": "not reported"
+    },
+    "contribution": {
+      "summary": "Combines a dual-branch (fine/coarse-kernel) CNN-BiLSTM feature extractor with adversarial multi-source domain generalization and extensive data augmentation, treating each source database as a distinct domain to improve generalization to the unseen test set; placed 5th of 41 teams in the official ranking.",
+      "code_available": "not reported",
+      "code_url": "not reported"
+    },
+    "entry_type": "team_entry"
+  },
+  {
+    "paper_id": "CinC2020-328",
+    "team_name": "DSAIL_SNU",
+    "authors_affiliation": "Seonwoo Min, Hyeongrok Han, Minji Seo, Sungroh Yoon (Seoul National University); Hyun-Soo Choi (T3K, SK Telecom); Jin-Kook Kim, Junsang Park, Sunghoon Jung (HUINNO Co., Ltd.); Il-Young Oh (Seoul National University Bundang Hospital); Byunghan Lee (Seoul National University of Science and Technology) \u2014 all South Korea",
+    "result": {
+      "official_challenge_metric_score": 0.42,
+      "official_rank": 6,
+      "evaluation_split": "official hidden full test set (0.420 challenge score, 6th place); also 10-fold cross-validation on training data (0.695 challenge score for the final WRN-18-2 model)",
+      "self_reported_metrics": {
+        "f1": "not reported",
+        "auroc": "not reported",
+        "sensitivity": "not reported",
+        "specificity": "not reported",
+        "accuracy": "not reported",
+        "other": "10-fold CV ablation results for final WRN-18-2 model: F2 = 0.696, G2 = 0.448, challenge score = 0.695. Per-database challenge scores on the full hidden test set (Table 3): DB1 = 0.688, DB2 = 0.654, DB3 = 0.228."
+      }
+    },
+    "model": {
+      "architecture_family": "ResNet",
+      "architecture_details": "18-layer Wide Residual Network (WRN-18-2): an input stem, four stages of N residual blocks (widening factor k=2), and an output stem. Each residual block uses two pre-activation convolutions with batch normalization, ReLU, and dropout between the convolutions, with 2x down-sampling at the first layer of each stage. Variable-length recordings are handled via a sliding window (4,096 samples, ~4s, with 512-sample/~1s overlap): each window is fed through the model up to the max-pooling layer, intermediate outputs are concatenated and max-pooled into a fixed-length vector, then passed through a final dense layer with sigmoid activation for multi-label output. Final model is an ensemble of 10 WRN-18-2 models from 10-fold cross-validation.",
+      "key_novelty": "Introduces a 'bag of tricks' layered onto a wide ResNet backbone: a confusion-weighted binary cross-entropy (CoW-BCE) loss derived directly from the Challenge's own reward/confusion matrix, a warmup + cosine-annealing learning-rate schedule, Manifold Mixup applied to hidden representations (to handle variable-length recordings), class-specific decision thresholds, and a 10-model ensemble \u2014 each shown empirically to incrementally improve the official challenge score."
+    },
+    "input": {
+      "leads_used": "12",
+      "signal_length_window": "Variable-length recordings processed via a sliding window of 4,096 samples (~4 seconds) with 512-sample (~1 second) overlap",
+      "sampling_rate": "500 Hz (recordings resampled to 500 Hz when necessary)",
+      "preprocessing": "50Hz and 60Hz notch filters to remove electrical noise; per-recording standardization (remove mean, scale to unit variance); resampling to 500 Hz where needed"
+    },
+    "data": {
+      "training_datasets": "All 6 official Challenge 2020 training datasets (PTB-XL, Georgia, CPSC, CPSC-Extra, PTB, StPetersburg); PTB and StPetersburg excluded due to long average recording length, and recordings without any positive scored label removed, leaving 37,619 recordings split into 10 folds via iterative stratification; no external data used",
+      "class_imbalance_handling": "Confusion-weighted binary cross-entropy (CoW-BCE) loss that down-weights the contribution of misdiagnoses between clinically similar classes, based on the Challenge's own reward matrix; iterative stratification used for the 10-fold split to preserve per-label positive-example distribution",
+      "augmentation_techniques": "Manifold Mixup \u2014 linear interpolation of hidden (intermediate) representations and labels of pairs of training examples, with mixing coefficient \u03bb ~ Beta(0.2, 0.2)"
+    },
+    "training": {
+      "loss_function": "Confusion-weighted binary cross-entropy (CoW-BCE), a modification of standard BCE that down-weights misdiagnoses with high reward-matrix similarity",
+      "optimizer": "Adam; learning rate 0.001 with a warmup (10 epochs) + cosine-annealing schedule over 100 total training epochs; batch size 128; L2 weight decay 0.0005; dropout probability 0.3",
+      "cross_validation_strategy": "10-fold cross-validation with iterative stratification; final submitted model is an ensemble of the 10 fold-specific models, averaging both prediction scores and class-specific decision thresholds",
+      "hardware": "NVIDIA V100 GPU"
+    },
+    "contribution": {
+      "summary": "Systematically evaluates a collection of small refinements (filtering/scaling, an LR warmup+cosine schedule, a novel confusion-weighted BCE loss tied to the Challenge's reward matrix, Manifold Mixup, class-specific thresholds, and model ensembling) on top of a wide ResNet backbone, showing each refinement incrementally and cumulatively improves 12-lead ECG classification performance, reaching 0.695 challenge score in cross-validation and 0.420 (6th place) on the official hidden test set.",
+      "code_available": "not reported",
+      "code_url": "not reported"
+    },
+    "entry_type": "team_entry"
+  },
+  {
+    "paper_id": "CinC2020-253",
+    "team_name": "UMCUVA",
+    "authors_affiliation": "Max N Bos, Rutger R van de Leur et al., University Medical Center Utrecht, University of Amsterdam, Netherlands Heart Institute, and Central Military Hospital, The Netherlands",
+    "result": {
+      "official_challenge_metric_score": 0.417,
+      "official_rank": 7,
+      "evaluation_split": "official hidden test set",
+      "self_reported_metrics": {
+        "f1": "not reported",
+        "auroc": 0.915,
+        "sensitivity": "not reported",
+        "specificity": "not reported",
+        "accuracy": "not reported",
+        "other": "10-fold cross-validation on training data (before hidden test evaluation): AUROC 0.939 \u00b1 0.004 and challenge metric 0.565 \u00b1 0.005; challenge metric ranged 0.298-0.643 across the four hidden test set partitions; per-class AUROC ranged 0.751-0.992"
+      }
+    },
+    "model": {
+      "architecture_family": "CNN",
+      "architecture_details": "Deep 1D exponentially dilated causal convolutional network (WaveNet/TCN-style, following Franceschi et al.) composed of 7 causal convolution blocks (dilation doubling from 1 to 64 across blocks), each block using causal convolutions (kernel size 3), weight normalization, leaky ReLU, and residual connections; channels go from 12 input leads to 108 (constant for the first 6 blocks) to 216 in the final block, yielding a 383-sample receptive field; followed by 1D adaptive max pooling to squeeze the temporal dimension and a 216-to-24 linear layer with sigmoid activation for multi-label output. Final model is an ensemble of 10 models (one per 10-fold CV split).",
+      "key_novelty": "First use of exponentially dilated causal convolutions (TCN-style) for ECG classification, combined with transfer learning by pre-training on a large external physician-annotated dataset (254,044 ECGs from a different country/device manufacturer) and fine-tuning on the challenge data with the earliest convolutional blocks frozen."
+    },
+    "input": {
+      "leads_used": "12",
+      "signal_length_window": "up to 10s (network supports variable length via causal convolutions + adaptive pooling); signals longer than 10s truncated to the first 10s, shorter signals zero-padded per training batch",
+      "sampling_rate": "500 Hz",
+      "preprocessing": "Resampled to 500 Hz via linear interpolation; truncation to first 10 seconds for longer recordings; zero-padding per batch for shorter recordings"
+    },
+    "data": {
+      "training_datasets": "Official challenge training dataset (42,511 12-lead ECGs, mapped to 24 classes after combining 3 equivalent diagnosis pairs); plus an external pre-training dataset of 254,044 12-lead ECGs from University Medical Center Utrecht (UMCU), physician-annotated via a text-mining pipeline (with a held-out UMCU test set of 16,698 ECGs)",
+      "class_imbalance_handling": "Weighted focal loss: positive-class weight set to the class imbalance ratio, scaled by a tunable weighting factor (0-1) between no weighting and full weighting, plus a focal loss gamma parameter (final model: gamma=2, weighting factor=0.5)",
+      "augmentation_techniques": "not reported"
+    },
+    "training": {
+      "loss_function": "Weighted focal loss (multi-label)",
+      "optimizer": "Adam",
+      "cross_validation_strategy": "10-fold iterative stratification for multi-label data; best-performing model per fold selected and ensembled via mean of probability outputs; early stopping after 5 epochs without challenge-metric improvement",
+      "hardware": "NVIDIA Titan Xp GPU (donated by NVIDIA Corporation); implemented in PyTorch 1.3, Python 3.7"
+    },
+    "contribution": {
+      "summary": "Combines transfer learning (pre-training on 254,044 ECGs from a different country and device manufacturer) with an exponentially dilated causal convolutional network, partially freezing pre-trained weights before fine-tuning on the challenge dataset, and ensembling across 10 cross-validation folds.",
+      "code_available": "not reported",
+      "code_url": "not reported"
+    },
+    "entry_type": "team_entry"
+  },
+  {
+    "paper_id": "CinC2020-161",
+    "team_name": "ECU",
+    "authors_affiliation": "Najmeh Fayyazifar, Selam Ahderom, David Suter (Edith Cowan University, Perth); Andrew Maiorana (Curtin University; Fiona Stanley Hospital); Girish Dwivedi (Fiona Stanley Hospital; University of Western Australia), Perth, Australia",
+    "result": {
+      "official_challenge_metric_score": 0.382,
+      "official_rank": 9,
+      "evaluation_split": "official hidden test set (full test score); also reports Challenge validation-set score of 0.623 and 10-fold CV scores on training data",
+      "self_reported_metrics": {
+        "f1": "not reported",
+        "auroc": "not reported",
+        "sensitivity": "not reported",
+        "specificity": "not reported",
+        "accuracy": "not reported",
+        "other": "10-fold cross-validation scores on training data (using the same official Challenge metric): hand-designed CNN 59.2%, hand-designed Conv-BiLSTM (RCNN) 61.9%, Conv-BiLSTM with wavelet input 62.9%, NAS-based (DARTS) CNN with wavelet input 64.4% (this last model was not submitted/scored on validation or full test sets)"
+      }
+    },
+    "model": {
+      "architecture_family": "Hybrid",
+      "architecture_details": "Two models proposed. (1) Hand-designed RCNN: 49 1D convolutional layers arranged in 16 blocks of 3 conv layers each (Conv-BN-ReLU-Dropout), with skip connections between blocks (ResNet-style concatenation), a stem conv layer with 32 filters, channel doubling at blocks 4/8/12 (up to 256 channels), filter length 24, followed by a BiLSTM layer with 300 hidden units and a final sigmoid layer with 24 output nodes. (2) NAS-based CNN: architecture discovered via Differentiable Architecture Search (DARTS) with a custom 1D search space (convolutions with filter lengths 3/5/7/9/11, dilated convolutions, max/average pooling, skip connections); final searched network stacked to 20 blocks (2 reduction blocks) with a sigmoid output layer.",
+      "key_novelty": "Directly compares a hand-designed CNN+BiLSTM (RCNN) architecture against an automatically discovered CNN architecture (via DARTS neural architecture search) for the same 12-lead ECG multi-label classification task, to study the impact of architecture design choice versus automated search."
+    },
+    "input": {
+      "leads_used": "12",
+      "signal_length_window": "10s fixed window; signals shorter than 10s zero-padded, longer than 10s truncated to the last 10 seconds",
+      "sampling_rate": "not reported",
+      "preprocessing": "Zero-padding/truncation to a fixed 10s window; for the NAS-based model, input was transformed via a 1-level Db1 wavelet decomposition, using only the approximation coefficients (details discarded) to reduce input size/compute"
+    },
+    "data": {
+      "training_datasets": "Official PhysioNet/CinC 2020 Challenge training data (43101 multi-label ECG samples originally; reduced to 37619 samples after discarding classes not among the 27 scored classes, collapsed to a 24-class task after merging 3 equivalent class pairs). No external datasets mentioned.",
+      "class_imbalance_handling": "Used a moving/adjusted decision threshold (0.2 instead of the default 0.5) for the multi-label sigmoid outputs to account for class imbalance",
+      "augmentation_techniques": "not reported"
+    },
+    "training": {
+      "loss_function": "not reported",
+      "optimizer": "RCNN model: Adam optimizer, He initialization, initial learning rate 1e-3 with ReduceLROnPlateau scheduler (decay 0.1, patience 3, min lr 1e-6), 50 epochs with early stopping (patience 15). NAS-based model: SGD with momentum 0.9, initial learning rate 0.025 with cosine annealing scheduler (min lr 1e-3); architecture search run for 50 epochs, final architecture trained from scratch for 200 epochs with early stopping (patience 20).",
+      "cross_validation_strategy": "10-fold cross-validation on the training dataset (random partition into 10 subsets; per fold: 8 for training, 1 for validation/early stopping, 1 held out for testing), mean of 10 folds reported",
+      "hardware": "RCNN model trained on a single Nvidia GeForce GTX 1080 Ti GPU (~300s/epoch, up to 250 minutes total); NAS-based model search and training on a single Nvidia Quadro RTX 8000 GPU (~50 min/epoch for search; ~20 hours total training run time)"
+    },
+    "contribution": {
+      "summary": "Compares a hand-designed Conv-BiLSTM (RCNN) architecture against an automatically-designed CNN found via Differentiable Architecture Search (DARTS) for 12-lead ECG abnormality classification, finding the NAS-discovered architecture achieves higher cross-validation scores than the hand-designed model, though it was not scored on the official validation/test sets.",
+      "code_available": "not reported",
+      "code_url": "not reported"
+    },
+    "entry_type": "team_entry"
+  },
+  {
+    "paper_id": "CinC2020-171",
+    "team_name": "HITTING",
+    "authors_affiliation": "Radovan Smisek, Andrea Nemcova, Lucie Marsanova, Lukas Smital, Martin Vitek, Jiri Kozumplik, Brno University of Technology (Faculty of Electrical Engineering and Communication, Department of Biomedical Engineering); Radovan Smisek also affiliated with The Czech Academy of Sciences, Institute of Scientific Instruments, Brno, Czech Republic",
+    "result": {
+      "official_challenge_metric_score": 0.354,
+      "official_rank": 11,
+      "evaluation_split": "official hidden test set (full test score 0.354); paper also reports a challenge hidden validation score of 0.435, and per-pathology F1 training scores on the public CPSC, CPSC2, PTB-XL and Georgia databases (5-fold cross-validation used when training the classification trees)",
+      "self_reported_metrics": {
+        "f1": "not reported as a single aggregate value; per-pathology F1 scores are reported in Table 1 for CPSC, CPSC2, PTB-XL, Georgia and the hidden validation set (e.g. AF: 0.9263/0.7394/0.9141/0.7528/0.83; STach: -/0.8305/0.8114/0.8865/0.844; LBBB: 0.7728/0.0506/0.8029/0.7432/0.697; full table in paper)",
+        "auroc": "not reported",
+        "sensitivity": "not reported",
+        "specificity": "not reported",
+        "accuracy": "not reported",
+        "other": "Challenge hidden validation score of 0.435 (distinct from the official full test score of 0.354)"
+      }
+    },
+    "model": {
+      "architecture_family": "Other",
+      "architecture_details": "Not a neural network. A fully rule-based/feature-engineering pipeline: QRS detection via a combination of three independent detectors (phasor transform, continuous wavelet transform, S-transform), QRS morphology clustering by cross-correlation to isolate the dominant morphology, averaging of the representative PQRST segment, detection of P/QRS/T wave onsets and offsets (wavelet transform + thresholding using the bior 1.5 wavelet for QRS, phasor-transform-based detection for P waves, wavelet+tangent method for T wave offset), followed by hand-crafted feature extraction and per-pathology classification using medical-definition thresholds (for STach, SB, IAVB/LPR, LBBB, PR, NSIVCB, LQRSV, SNR) or classification trees (for AF, AFL, SA, RBBB, IRBBB, LAnFB, LAD, RAD, PAC, PVC, TAb).",
+      "key_novelty": "An interpretable, fully rule-based (non-deep-learning) diagnostic pipeline that averages a representative PQRST complex per record and applies explicit medical-definition thresholds or shallow classification trees on hand-crafted morphological/interval features, prioritizing explainability over raw performance."
+    },
+    "input": {
+      "leads_used": "12",
+      "signal_length_window": "Whole-record processing; only the QRS complexes of the dominant morphology cluster in each record are averaged into a single representative PQRST segment used for feature extraction (not a fixed-duration window)",
+      "sampling_rate": "not reported",
+      "preprocessing": "QRS detection via combined phasor/continuous-wavelet/S-transform detectors; bandpass filtering (20-40 Hz) for AF-related feature extraction; QRS alignment and cross-correlation-based clustering by morphology; averaging of the dominant-morphology PQRST segment; wavelet-based (bior 1.5) onset/offset detection for QRS, phasor-transform-based P-wave detection, and wavelet+tangent-based T-wave offset detection"
+    },
+    "data": {
+      "training_datasets": "All 6 official Challenge databases used for evaluation/detection (CPSC2018, CPSC2/Southeast University China, St Petersburg INCART, PTB Diagnostic ECG Database, PTB-XL, Georgia); only CPSC, PTB-XL and Georgia databases were used to train the classification trees. No external (non-Challenge) data used.",
+      "class_imbalance_handling": "not reported",
+      "augmentation_techniques": "not reported"
+    },
+    "training": {
+      "loss_function": "not applicable \u2014 rule-based/classification-tree method, not a trained loss-optimized neural network",
+      "optimizer": "not applicable \u2014 classification trees used, not gradient-based optimization",
+      "cross_validation_strategy": "5-fold cross-validation used when fitting the classification trees (to avoid overfitting)",
+      "hardware": "not reported"
+    },
+    "contribution": {
+      "summary": "Presents a fully interpretable, non-deep-learning ECG classification pipeline for 19 cardiac pathologies, based on QRS/P/T wave delineation, averaged representative PQRST morphology, and either medically-defined thresholds or shallow classification trees on hand-crafted features, trading some performance for transparency about which features and thresholds drive each diagnosis.",
+      "code_available": "not reported",
+      "code_url": "not reported"
+    },
+    "entry_type": "team_entry"
+  },
+  {
+    "paper_id": "CinC2020-417",
+    "team_name": "AUTh Team",
+    "authors_affiliation": "Charilaos Zisou, Andreas Sochopoulos, Konstantinos Kitsios \u2014 Department of Electrical and Computer Engineering, Aristotle University of Thessaloniki, Thessaloniki, Greece",
+    "result": {
+      "official_challenge_metric_score": 0.281,
+      "official_rank": 13,
+      "evaluation_split": "official hidden test set; also report 0.593 via 5-fold cross-validation on the full training set",
+      "self_reported_metrics": {
+        "f1": "not reported",
+        "auroc": 0.946,
+        "sensitivity": "not reported",
+        "specificity": "not reported",
+        "accuracy": "not reported",
+        "other": "5-fold CV Challenge metric: CRNN 0.511, LightGBM 0.549, Ensemble 0.593; 5-fold CV AUROC: CRNN 0.908, LightGBM 0.935, Ensemble 0.946 (AUROC/Challenge metric values are on the training set via CV, not the hidden test set)"
+      }
+    },
+    "model": {
+      "architecture_family": "Ensemble",
+      "architecture_details": "Ensemble of a 1D convolutional recurrent neural network (CRNN: convolutional layers with 24 filters each, LeakyReLU activation, batch normalization, dropout, a self-attention mechanism, and a bidirectional GRU) and LightGBM (gradient boosting decision tree using hand-engineered features: wavelet multiresolution analysis and wavelet-bispectrum higher-order statistics per lead, signal energy/autocorrelation/SNR/R-peak amplitude statistics, HRV time/frequency/nonlinear features, plus patient age and sex). The two models' class probabilities are combined via class-specific weighted averaging with class-specific thresholds, both tuned by a genetic algorithm (fitness = 5-fold Challenge metric average); final submission uses 10-fold bagging (10 ensemble models averaged).",
+      "key_novelty": "Combines a deep CRNN with self-attention with a feature-engineered LightGBM model using class-specific weights and thresholds tuned by a genetic algorithm, yielding an interpretable per-class breakdown of which model type is more predictive (LightGBM favored for HRV-related rhythm classes, CRNN favored for QRS-morphology classes)."
+    },
+    "input": {
+      "leads_used": "12",
+      "signal_length_window": "10s (truncated or zero-padded to 10s)",
+      "sampling_rate": "500 Hz (resampled)",
+      "preprocessing": "Data relabeling to 24 target scored classes (removing unscored diagnoses); 3rd-order low-pass Butterworth filter (20Hz cutoff) for high-frequency noise; Notch filter (0.01Hz cutoff) for baseline wander; resampling to 500Hz and truncation/padding to 10s; per-lead normalization to zero mean/unit variance for CRNN input"
+    },
+    "data": {
+      "training_datasets": "All official challenge training datasets combined, relabeled from >100 raw classes down to 24 target scored classes (6 pairwise-identical classes merged, unscored diagnoses removed); no external data",
+      "class_imbalance_handling": "SMOTE oversampling of the minority class to 10% of the majority class combined with random under-sampling of the majority class by 50%, applied for LightGBM's one-vs-rest binary classifiers",
+      "augmentation_techniques": "not reported"
+    },
+    "training": {
+      "loss_function": "LightGBM: binary logloss objective per one-vs-rest binary classifier; CRNN: not reported",
+      "optimizer": "LightGBM: gradient boosting with learning rate 0.075, hyperparameters (feature fraction, lambda l1/l2, max depth, min child weight, min split gain, num leaves) tuned via Bayesian optimization, early stopping on validation AUROC; CRNN: Adam optimizer with Xavier weight initialization, early stopping on validation AUROC",
+      "cross_validation_strategy": "5-fold iterative-stratification cross-validation for multi-label data (per Sechidis et al.); genetic algorithm tunes ensemble weights/thresholds using 5-fold Challenge metric average as fitness; 10-fold bagging performed for the final submitted ensemble",
+      "hardware": "not reported"
+    },
+    "contribution": {
+      "summary": "Proposes an ensemble of a CRNN (with self-attention and a bidirectional GRU) and a feature-engineered LightGBM model, combined via class-specific weights and thresholds optimized by a genetic algorithm, showing the two model types are complementary across abnormality types and outperform either alone.",
+      "code_available": "not reported",
+      "code_url": "not reported"
+    },
+    "entry_type": "team_entry"
+  },
+  {
+    "paper_id": "CinC2020-229",
+    "team_name": "UC_Lab_Kn",
+    "authors_affiliation": "Lucas Weber, Maksym Gaiduk, Wilhelm Daniel Scherz, Ralf Seepold; HTWG Konstanz, Germany, and I.M. Sechenov First Moscow State Medical University, Moscow, Russian Federation",
+    "result": {
+      "official_challenge_metric_score": 0.27,
+      "official_rank": 15,
+      "evaluation_split": "official hidden test set (full test score 0.27); paper also reports a validation score of 0.656 and per-subset hidden scores (Set 1: 0.840, Set 2: 0.300, Set 3: 0.190)",
+      "self_reported_metrics": {
+        "f1": "not reported",
+        "auroc": "not reported",
+        "sensitivity": "not reported",
+        "specificity": "not reported",
+        "accuracy": "not reported",
+        "other": "5-fold cross-validation on training data (not hidden test set): AUROC 0.943 (no augmentation) / 0.947 (with augmentation) / 0.970 (ensemble); AUPRC 0.567 / 0.577 / 0.611; Challenge metric 0.602 / 0.611 / 0.642 (ensemble). The ensemble was not evaluated on the official hidden test set due to runtime restrictions."
+      }
+    },
+    "model": {
+      "architecture_family": "ResNet",
+      "architecture_details": "Modified 1D residual CNN: an initial block of three convolutions (the latter two with skip connections), followed by D=3 repeated groups of M=5 normal residual blocks (each pair of stride-1 convolutions plus a stride-3 bottleneck downsampling layer that doubles the feature count per repetition), then M additional normal blocks, a global max-pooling layer over each feature map (replacing intermediate pooling/batch norm), and a fully-connected classifier with one hidden layer that concatenates pooled convolutional features with patient age and sex, ending in a 24-class sigmoid output. ELU activations throughout; convolution kernel width W=5.",
+      "key_novelty": "Removes intermediate pooling layers and batch normalization in favor of a single global max-pooling layer after the convolutional feature extractor, making the network fully independent of input signal length so it can train and predict on ECG segments of arbitrary duration, combined with five custom raw-signal data-augmentation methods (slicing, CutOut, channel shifting, additive noise, dropout)."
+    },
+    "input": {
+      "leads_used": "12",
+      "signal_length_window": "Variable length; training uses random slices up to 10000 samples (20s), minimum 4000 samples (or full signal if shorter); testing uses the whole signal (predictions averaged across slices if the signal exceeds 10000 samples) \u2014 architecture is signal-length independent via global pooling",
+      "sampling_rate": "500 Hz (all signals resampled to 500 Hz via Fourier resampling from their original, varying sample rates)",
+      "preprocessing": "Resampling to 500 Hz; division by each signal's gain value to obtain physical units; outlier removal via a 50-sample (0.1s) uniform-filter baseline, replacing samples deviating >2.5 mV from baseline with the signal mean, followed by a 5-sample (0.01s) median filter for smoothing; second-order Butterworth bandpass filter, cutoffs 0.5-45 Hz."
+    },
+    "data": {
+      "training_datasets": "Full official PhysioNet/CinC2020 challenge training data (43101 signals); no external data reported; patient age and sex from the header (coded as -1 if missing) used as additional classifier inputs",
+      "class_imbalance_handling": "not reported",
+      "augmentation_techniques": "Signal slicing (variable-length random crops, up to 10000 samples); CutOut (per-lead masking with the signal mean, mask length 0 to 20% of channel length, applied with 35% probability per lead); channel shifting (circular shift, same amount for all channels up to 500 samples, or independently per channel up to 5 samples); additive white Gaussian noise (max amplitude 20 microvolts); Dropout (50%) in the fully-connected classifier."
+    },
+    "training": {
+      "loss_function": "Binary cross-entropy",
+      "optimizer": "Adam, learning rate 1e-4, weight decay 1e-5",
+      "cross_validation_strategy": "5-fold cross-validation on training data for augmentation/ensemble comparisons; final submitted single model trained on a 90%/10% train/validation split; decision threshold of 0.071 (applied uniformly across classes) chosen by maximizing the challenge metric on the validation set",
+      "hardware": "Tesla K40 GPU (Amazon Web Services); PyTorch framework; approximately 12 hours training time per model"
+    },
+    "contribution": {
+      "summary": "Adapts a 1D residual CNN with a single global max-pooling layer to make the network invariant to variable ECG signal length, and shows that five lightweight raw-signal data-augmentation techniques (slicing, CutOut, channel shift, additive noise, dropout) improve cross-validated generalization performance over the same architecture trained without augmentation.",
+      "code_available": "not reported",
+      "code_url": "not reported"
+    },
+    "entry_type": "team_entry"
+  },
+  {
+    "paper_id": "CinC2020-134",
+    "team_name": "JuJuRock",
+    "authors_affiliation": "Po-Ya Hsu, Po-Han Hsu, Tsung-Han Lee (UC San Diego, CA, USA); Hsin-Li Liu (Central Taiwan University of Science and Technology, Taichung City, Taiwan)",
+    "result": {
+      "official_challenge_metric_score": 0.244,
+      "official_rank": 16,
+      "evaluation_split": "official hidden full test set (abstract reports 0.244, rank 16/41; a separate Table 1 'Official' row reports 0.406, apparently from an earlier/validation phase, and is not clearly distinguished from the final test score in the text)",
+      "self_reported_metrics": {
+        "f1": "not reported",
+        "auroc": "not reported",
+        "sensitivity": "not reported",
+        "specificity": "not reported",
+        "accuracy": "not reported",
+        "other": "5-fold cross-validation scores per training dataset (Table 1): CPSC 0.455, CPSC_2 0.402, Georgia 0.456, PTB -2.589, PTB-XL 0.173, St. Petersburg 0.340, and an 'Official' row of 0.406. Abstract separately states 0.402 via 5-fold CV on full training data and 0.244 on final full test data."
+      }
+    },
+    "model": {
+      "architecture_family": "Ensemble",
+      "architecture_details": "Per-class binary classifiers trained on hand-crafted amplitude/timing feature maps derived from a single representative heartbeat per patient; boosting classifier (gradient-boosting style ensemble) was the best-performing model, ahead of random forest, SVM, logistic regression, k-NN, decision tree, and DL baselines (AlexNet-style CNN, LSTM).",
+      "key_novelty": "A cache-inspired (least-recently-used) clustering procedure using structural similarity index (SSIM) to select a single representative 1-second heartbeat per patient, paired with a physiologically interpretable amplitude/timing feature generator, then classified per-arrhythmia with classical ML models (boosting won out over CNN/RNN/other ML models)."
+    },
+    "input": {
+      "leads_used": "12",
+      "signal_length_window": "1-second representative heartbeat frame selected per patient (R-peak centered); for records >20s, multiple representations (up to 100) are sampled and voted over",
+      "sampling_rate": "not reported (uses dataset-native sampling rate, denoted fs, in the segmentation algorithm)",
+      "preprocessing": "12th-order Butterworth low-pass filter (50Hz cutoff) plus channel-wise moving-average smoothing (10ms window); R-peak detection on Lead II via Pan-Tompkins (with a noisy-signal fallback method); heartbeats segmented into 1-second frames and clustered via an SSIM-based cache-like algorithm to pick one representative heartbeat per patient"
+    },
+    "data": {
+      "training_datasets": "4 of the 6 official Challenge training sets used: Georgia, CPSC, CPSC_2, and PTB-XL 12-Lead ECG databases (PTB and St. Petersburg excluded due to sample size, length, and lower SNR); only records with at least one of the 27 scored classes were kept",
+      "class_imbalance_handling": "Random undersampling: for the larger class in each binary classification task, samples were randomly subsampled to match the size of the smaller class",
+      "augmentation_techniques": "not reported"
+    },
+    "training": {
+      "loss_function": "not reported",
+      "optimizer": "not reported",
+      "cross_validation_strategy": "80%/20% train/test split used for model and feature selection experiments per class; 5-fold cross-validation reported per dataset in Table 1",
+      "hardware": "not reported"
+    },
+    "contribution": {
+      "summary": "Introduces a cache-inspired (LRU + SSIM similarity) method to distill each patient's 12-lead ECG into one representative heartbeat, plus a physiologically interpretable amplitude/timing feature-map generator, then shows a boosting classifier trained on these features outperforms both other classical ML models and basic deep learning models for multi-label arrhythmia classification.",
+      "code_available": "not reported",
+      "code_url": "not reported"
+    },
+    "entry_type": "team_entry"
+  },
+  {
+    "paper_id": "CinC2020-225",
+    "team_name": "Cardio-Challengers",
+    "authors_affiliation": "Akash Kirodiwal, Apoorva Srivastava, Ashutosh Dash, Ayantika Saha, Gopi Vamsi Penaganti, Sawon Pratiher, Sazedul Alam, Amit Patra, Nirmalya Ghosh, Nilanjan Banerjee; Dept. of Electrical Engineering, IIT Kharagpur, India, and CSEE, University of Maryland, Baltimore County, USA",
+    "result": {
+      "official_challenge_metric_score": 0.258,
+      "official_rank": 16,
+      "evaluation_split": "official hidden test set (full test data); paper also separately reports a 0.337 challenge metric score on their own held-out validation dataset",
+      "self_reported_metrics": {
+        "f1": 0.116,
+        "auroc": 0.498,
+        "sensitivity": "not reported",
+        "specificity": "not reported",
+        "accuracy": "not reported",
+        "other": "Macro AUPRC = 0.072 (test), 0.060 (validation); Macro F-measure = 0.105 (validation), 0.116 (test); Macro AUROC = 0.498 (reported identically for both validation and test); fixed-threshold (0.005) challenge metric score of 0.314 vs. 0.337 with a learned per-class threshold optimizer."
+      }
+    },
+    "model": {
+      "architecture_family": "Hybrid",
+      "architecture_details": "1D CNN + LSTM hybrid ('bio-toolkit'): two Conv1D layers (64 filters each, kernel size 4x1, stride 1), followed by two LSTM layers (32 units then 12 units), a Flatten layer, and a densely-connected sigmoid output layer of size 27 (one per scored class), implemented in Keras.",
+      "key_novelty": "Instead of classifying raw multi-lead signal, extracts a single subject-wise averaged cardiac-cycle 'template' from Lead II only (R-peak aligned via the Hamilton algorithm, resampled to 400 samples, split into two halves and swapped, amplitude-normalized), reducing each recording to one compact denoised waveform fed into a small CNN-LSTM classifier."
+    },
+    "input": {
+      "leads_used": "Lead II only (of the 12 available leads)",
+      "signal_length_window": "One averaged cardiac cycle per subject, resampled to a fixed 400-sample template (not a raw time window)",
+      "sampling_rate": "not reported",
+      "preprocessing": "FIR bandpass filter, passband 3-45 Hz, applied to Lead II; R-peak detection via the Hamilton algorithm; signal segmented between R peaks; each cardiac cycle re-sampled to 400 samples and averaged per subject; resulting template split into two equal halves and swapped; amplitude-normalized to the template's maximum absolute value."
+    },
+    "data": {
+      "training_datasets": "Official PhysioNet/CinC2020 training set (43101 12-lead recordings; 42920 retained after removing samples with NaN template values); no external data reported",
+      "class_imbalance_handling": "not reported",
+      "augmentation_techniques": "not reported"
+    },
+    "training": {
+      "loss_function": "Binary cross-entropy",
+      "optimizer": "Adam, learning rate 0.005",
+      "cross_validation_strategy": "not reported \u2014 single split of available data into 64% training, 16% validation, 20% testing (not k-fold cross-validation); early stopping if loss did not decrease for 8 consecutive epochs (max 1000 epochs, batch size 256)",
+      "hardware": "not reported"
+    },
+    "contribution": {
+      "summary": "Proposes a lightweight 'bio-toolkit' that reduces each 12-lead ECG to a single averaged Lead-II cardiac-cycle template and classifies it with a compact 2-layer CNN + 2-layer LSTM network with a per-class optimized decision threshold, aiming for a low-complexity model suitable for real-time use.",
+      "code_available": "not reported",
+      "code_url": "not reported"
+    },
+    "entry_type": "team_entry"
+  },
+  {
+    "paper_id": "CinC2020-282",
+    "team_name": "Minibus",
+    "authors_affiliation": "Ran Duan, Xiaodong He, Zhuoran Ouyang; Edan Diagnostics ltd., Shenzhen, China",
+    "result": {
+      "official_challenge_metric_score": 0.236,
+      "official_rank": 18,
+      "evaluation_split": "official hidden full test set (score 0.236, rank 18th of 41); a separate 'validation score' of 0.446 was also officially reported on a validation split",
+      "self_reported_metrics": {
+        "f1": "not reported",
+        "auroc": "not reported",
+        "sensitivity": "not reported",
+        "specificity": "not reported",
+        "accuracy": "not reported",
+        "other": "Official validation score of 0.446 (challenge weighted-accuracy metric) on the challenge validation split, prior to the 0.236 full hidden test set score"
+      }
+    },
+    "model": {
+      "architecture_family": "CNN",
+      "architecture_details": "MADNN: a 1-dimensional ResNeXt-style stem followed by four stacked 'multi-scale attention modules' that sequentially combine a branch-wise (SKNet-style) attention module and a kernel-wise (SENet-style squeeze-and-excitation) attention module, then global average pooling and a fully-connected output layer. Kernel size in the stem was reduced to 3 (from 7 in standard ResNeXt) to preserve high-frequency ECG features.",
+      "key_novelty": "Combines kernel-wise (SE) and branch-wise (SK) attention sequentially into a single 'multi-scale attention module' on a 1D ResNeXt backbone, allowing each attention type to be optimized separately with diverse attention weights across convolutional kernels."
+    },
+    "input": {
+      "leads_used": "not reported",
+      "signal_length_window": "60 seconds fixed length (30000 sample points at 500 Hz); shorter signals end-to-end repeated, longer signals truncated from the end; random cropping augmentation applied within 60-sample-point start/end intervals",
+      "sampling_rate": "500 Hz (resampled via FFT from original 500 Hz or 1000 Hz recordings)",
+      "preprocessing": "FFT-based resampling to 500 Hz, padding/truncation to a fixed 60-second (30000 sample point) length, random cropping augmentation during training"
+    },
+    "data": {
+      "training_datasets": "43134 samples obtained from the PhysioNet/Computing in Cardiology Challenge 2020 official training data; no external data reported; 27 scored diagnosis classes used; data split 80% train / 10% validation / 10% test",
+      "class_imbalance_handling": "Focal loss as the training loss; additionally a per-class balance factor (Wi = 2*mu_i/mu) used to probabilistically skip/downsample over-represented classes during training",
+      "augmentation_techniques": "Random cropping of the padded signal within reserved 60-sample-point start and end intervals"
+    },
+    "training": {
+      "loss_function": "Binary cross-entropy per label (paper also states focal loss was adopted to address class imbalance)",
+      "optimizer": "Adam (initial learning rate 0.0001, beta1=0.9, beta2=0.999, epsilon=1e-08), with learning rate reduced by factor 0.5 after 5 epochs without validation loss improvement",
+      "cross_validation_strategy": "not reported (single 80/10/10 train/validation/test split; a separate ensemble classifier was evaluated via cross-validation on the local testing set)",
+      "hardware": "not reported"
+    },
+    "contribution": {
+      "summary": "Proposes MADNN, a 1D ResNeXt-based network with a novel multi-scale attention module that sequentially combines SENet-style kernel-wise attention and SKNet-style branch-wise attention, applied to 12-lead ECG arrhythmia classification.",
+      "code_available": "not reported",
+      "code_url": "not reported"
+    },
+    "entry_type": "team_entry"
+  },
+  {
+    "paper_id": "CinC2020-363",
+    "team_name": "desafinado",
+    "authors_affiliation": "Durmus Umutcan Uguz, Felix Berief, Steffen Leonhardt, Christoph Hoog Antink; Medical Information Technology, Helmholtz-Institute for Biomedical Engineering, RWTH Aachen University, Aachen, Germany",
+    "result": {
+      "official_challenge_metric_score": 0.233,
+      "official_rank": 19,
+      "evaluation_split": "official hidden test set (full test set, rank 19 of 41); also report a challenge validation-phase score of 0.576 and a 10-fold training cross-validation mean score of 0.57",
+      "self_reported_metrics": {
+        "f1": 0.298,
+        "auroc": 0.822,
+        "sensitivity": "not reported",
+        "specificity": "not reported",
+        "accuracy": 0.089,
+        "other": "Full test set AUPRC 0.362. Per-test-database scores: Test Database 1: AUROC 0.967, F-measure 0.182, score 0.681; Test Database 2: AUROC 0.887, F-measure 0.412, score 0.556; Test Database 3: AUROC 0.806, F-measure 0.202, score -0.013. Official challenge validation-phase score: 0.576 (AUROC 0.906, AUPRC 0.478, accuracy 0.224, F-measure 0.413)."
+      }
+    },
+    "model": {
+      "architecture_family": "Ensemble",
+      "architecture_details": "One-vs-Rest scheme with 25 independent XGBoost gradient-boosted-tree binary classifiers (one per scored class), each classifying a hand-engineered feature vector per recording; positive samples for class k reweighted by wk=(Ntot-Nk)/Nk to counter class imbalance; per-class decision thresholds tk tuned via cross-validation to optimize the challenge score.",
+      "key_novelty": "Introduces a novel beat-to-beat Pearson-correlation analysis on Kors-transformed orthogonal XYZ leads to identify 'dissonant' (least similar) vs. 'accordant' (most similar) heartbeats relative to the median beat, isolating arrhythmic beats occurring among otherwise normal cycles; combined with classical fiducial-point timing/waveform features and wavelet-transform features, fed into per-class XGBoost classifiers."
+    },
+    "input": {
+      "leads_used": "12 (plus derived orthogonal XYZ leads via Kors transformation)",
+      "signal_length_window": "not reported (whole-recording, beat-level feature extraction rather than a fixed window)",
+      "sampling_rate": "not reported",
+      "preprocessing": "Low-pass filtered at 80Hz; baseline wander removed via a two-step median filter (200ms and 600ms window lengths); Kors transformation applied to derive orthogonal XYZ leads; beats segmented using BioSPPy and the Pan-Tompkins QRS detection algorithm"
+    },
+    "data": {
+      "training_datasets": "All official Challenge training datasets (CPSC, CPSC-unused, Georgia, PTB, PTB-XL, StPetersburg); generalization also evaluated via leave-one-dataset-out cross-validation",
+      "class_imbalance_handling": "One-vs-Rest positive-sample reweighting per class by wk=(Ntot-Nk)/Nk (negative samples weighted 1); per-class decision thresholds tuned during cross-validation to optimize the challenge score",
+      "augmentation_techniques": "not reported"
+    },
+    "training": {
+      "loss_function": "not reported (XGBoost's internal gradient-boosting objective with per-class sample reweighting)",
+      "optimizer": "not reported (XGBoost gradient boosting; hyperparameters gamma, min_child_weight, and max_depth were extensively tuned)",
+      "cross_validation_strategy": "10-fold cross-validation on the combined training data; additional leave-one-dataset-out cross-validation (holding out entire data sources) to evaluate generalization to unseen data sources",
+      "hardware": "not reported (evaluation-system runtime on the official challenge system: 101 hours 28 minutes)"
+    },
+    "contribution": {
+      "summary": "Combines domain-specific ECG timing/waveform features with domain-agnostic wavelet features and a novel beat-to-beat Pearson-correlation analysis (on Kors-transformed XYZ leads) to detect atypical beats, classified via per-class One-vs-Rest XGBoost gradient-boosted trees with imbalance reweighting and tuned decision thresholds.",
+      "code_available": "not reported",
+      "code_url": "not reported"
+    },
+    "entry_type": "team_entry"
+  },
+  {
+    "paper_id": "CinC2020-138",
+    "team_name": "Eagles",
+    "authors_affiliation": "Andrew Demonbreun, Grace M Mirsky (Benedictine University, Lisle, IL, USA)",
+    "result": {
+      "official_challenge_metric_score": 0.205,
+      "official_rank": 20,
+      "evaluation_split": "official hidden full test set (abstract: validation score 0.214, full test score 0.205, rank 20/41)",
+      "self_reported_metrics": {
+        "f1": "not reported",
+        "auroc": "not reported",
+        "sensitivity": "not reported",
+        "specificity": "not reported",
+        "accuracy": "not reported",
+        "other": "Unofficial phase best entry: F_beta = 0.310, G_beta = 0.170. Training validation accuracy ranged 83-98% across different arrhythmias (no single aggregate figure reported)."
+      }
+    },
+    "model": {
+      "architecture_family": "Ensemble",
+      "architecture_details": "Twelve independent per-lead models, each a modified SqueezeNet CNN (transfer learning) fine-tuned on scalogram images generated from that lead's ECG signal via continuous wavelet transform; final six SqueezeNet layers modified (60% dropout, 1x1 conv with filters = number of output classes, classification layer without preset labels); predictions from the 12 lead-specific models combined via a voting scheme (each model contributes 0.083 per diagnosis code; codes with summed score >0.3 (>=4 votes) are assigned, else the max-scoring code(s) are used).",
+      "key_novelty": "Trains a separate SqueezeNet transfer-learning CNN per ECG lead on wavelet scalogram images (rather than one model over all 12 leads), then fuses the 12 lead-level predictions with a simple vote-counting scheme to allow multi-label diagnosis with increased confidence."
+    },
+    "input": {
+      "leads_used": "12 (each lead modeled independently, then fused by voting)",
+      "signal_length_window": "not reported",
+      "sampling_rate": "not reported",
+      "preprocessing": "ECG signals converted to scalograms (time-frequency representation of absolute continuous wavelet transform coefficients) per lead, used as images for SqueezeNet transfer learning"
+    },
+    "data": {
+      "training_datasets": "Official PhysioNet/CinC 2020 Challenge training data (dataset breakdown not itemized in paper); diagnosis categories reduced to the 27 individually scored classes plus 49 label combinations occurring at least 50 times in the training set (76 total diagnosis categories); records without at least one of these 76 categories were excluded",
+      "class_imbalance_handling": "Balanced subsampling: only ten example signals per diagnosis combination were used for training, chosen for a balanced dataset processable within limited computing resources",
+      "augmentation_techniques": "not reported"
+    },
+    "training": {
+      "loss_function": "crossentropyex (cross-entropy) classification loss (default SqueezeNet output layer)",
+      "optimizer": "Stochastic gradient descent with momentum (SGDM); initial learning rate 3e-4, mini-batch size 10, max epochs 15",
+      "cross_validation_strategy": "not reported",
+      "hardware": "not reported"
+    },
+    "contribution": {
+      "summary": "Applies wavelet-scalogram transfer learning with a modified SqueezeNet to build 12 separate per-lead ECG classifiers and combines their outputs with a vote-counting scheme, enabling multi-label arrhythmia diagnosis while leveraging lead-specific anatomical sensitivity to different arrhythmias.",
+      "code_available": "not reported",
+      "code_url": "not reported"
+    },
+    "entry_type": "team_entry"
+  },
+  {
+    "paper_id": "CinC2020-189",
+    "team_name": "BUTTeam",
+    "authors_affiliation": "Tomas Vicar, Jakub Hejc, Petra Novotna, Marina Ronzhina, Oto Janousek; Department of Biomedical Engineering, Brno University of Technology, Brno, Czech Republic",
+    "result": {
+      "official_challenge_metric_score": 0.202,
+      "official_rank": 21,
+      "evaluation_split": "official hidden test set (full test set, out of 40 teams in the official ranking); challenge validation score was 0.696",
+      "self_reported_metrics": {
+        "f1": "not reported",
+        "auroc": "not reported",
+        "sensitivity": "not reported",
+        "specificity": "not reported",
+        "accuracy": "not reported",
+        "other": "Dice Coefficient (DC): 0.571 on training hold-out subset, 0.522 on validation data, 0.277 on full test set. Challenge Metric (CM) per hidden database: Database 1 = 0.892 (same-source data, best of 40 teams), Database 2 = 0.235, Database 3 = 0.104 (different-source data)."
+      }
+    },
+    "model": {
+      "architecture_family": "ResNet",
+      "architecture_details": "1D ResNet-style CNN feature extractor with 6 residual blocks (3 convolutional layers each, kernel size 3), local skip connections plus an additional global skip connection from the input layer, followed by Global Max Pooling and a final classification layer of 24 independent fully-connected binary classifiers (termed 'BUTT' - Binary Units Training Technique) with sigmoid outputs.",
+      "key_novelty": "Extends a 1D ResNet with a global skip connection to the input, and derives a custom differentiable loss function directly from the official Challenge weighted-confusion-matrix metric, combined with per-class Bayesian-optimized decision thresholds."
+    },
+    "input": {
+      "leads_used": "12",
+      "signal_length_window": "variable length; zero-padded to equal length for mini-batch training, with zero-padded portion cropped out immediately after the ResNet layers (before pooling) to avoid distorting pooled features; long Holter recordings split into segments at inference",
+      "sampling_rate": "resampled to 125 Hz (source data at 257, 500, or 1000 Hz)",
+      "preprocessing": "Time-domain resampling to a fixed 125 Hz via linear interpolation combined with decimation and an anti-aliasing FIR filter; zero-padding for batch formation."
+    },
+    "data": {
+      "training_datasets": "43,101 labeled recordings from the 6 official Challenge training databases; no external data reported",
+      "class_imbalance_handling": "Weighted cross-entropy (WCE) loss with per-class positive/negative weights inversely proportional to class frequency",
+      "augmentation_techniques": "Random \u00b110% stretch along the temporal axis (p=0.8) and \u00b120% amplification along the voltage axis (p=0.8); other tested preprocessing augmentations (baseline drift removal, temporal shifting, noise addition, simulated electrode switch) had no measurable effect."
+    },
+    "training": {
+      "loss_function": "Two-phase training: weighted cross-entropy (WCE) in the first learning-rate cycle, then a custom differentiable 'CM Loss' derived from the official Challenge metric's weighted confusion matrix in the second cycle",
+      "optimizer": "Adam (\u03b21=0.9, \u03b22=0.999) with decoupled weight decay (\u03bb=1e-5), initial learning rate 1e-3, two-cycle schedule decaying by 0.1x every 30 epochs per cycle, mini-batch size 32; Stochastic Weight Averaging applied across epochs",
+      "cross_validation_strategy": "10% random hold-out subset of training data for internal validation (no k-fold CV reported); final model is a majority-vote ensemble of 3 bootstrap-aggregated models each fit on a 90% subset of training data",
+      "hardware": "not reported"
+    },
+    "contribution": {
+      "summary": "Proposes a 1D ResNet with local and global skip connections and per-class binary classification heads ('BUTT'), trained using a custom loss function derived directly from the official Challenge metric plus Bayesian-optimized class-specific thresholds, but shows this approach generalizes poorly to ECG data from sources unseen in training.",
+      "code_available": true,
+      "code_url": "https://github.com/tomasvicar/BUTTeam"
+    },
+    "entry_type": "team_entry"
+  },
+  {
+    "paper_id": "CinC2020-185",
+    "team_name": "Madhardmax",
+    "authors_affiliation": "Hardik Rajpal, Madalina Sas, Chris Lockwood, Rebecca Joakim, Nicholas S Peters, Max Falkenberg; Centre for Complexity Science, Imperial College London (UK), with contributors from Wexham Park Hospital and an independent researcher (Luxembourg)",
+    "result": {
+      "official_challenge_metric_score": 0.155,
+      "official_rank": 24,
+      "evaluation_split": "official hidden test set (out of 41 successful entries); validation leaderboard score was 0.533 prior to final test scoring",
+      "self_reported_metrics": {
+        "f1": "not reported",
+        "auroc": "not reported",
+        "sensitivity": 0.936,
+        "specificity": "not reported",
+        "accuracy": 0.398,
+        "other": "On training/validation data (with IT features, threshold 0.9): AUPRC 0.55, Precision 0.776, F2 score 0.626 (improved to 0.739 after threshold tuning). Without IT features: Accuracy 0.379, Precision 0.804, Recall 0.934, F2 0.601 (0.731 after threshold tuning)."
+      }
+    },
+    "model": {
+      "architecture_family": "Ensemble",
+      "architecture_details": "Per-condition binary classifiers using XGBoost (gradient-boosted decision tree ensembles), one ensemble trained independently per scored heart condition, with a tuned probability threshold per class for binarization.",
+      "key_novelty": "Combines standard ECG waveform/interval/power-spectrum features with information-theoretic measures borrowed from neuroscience (normalized Lempel-Ziv complexity of the binarized signal, and synergy/redundancy captured via O-Information and S-Information across leads) as inputs to an interpretable per-condition XGBoost classifier."
+    },
+    "input": {
+      "leads_used": "12",
+      "signal_length_window": "not reported",
+      "sampling_rate": "not reported",
+      "preprocessing": "Second-order Butterworth band-pass filter (1.5-25 Hz) per channel, followed by 'db4' discrete wavelet transform denoising; segment/interval features normalized by average RR interval, wave heights normalized by absolute R peak height."
+    },
+    "data": {
+      "training_datasets": "Combined official Challenge training datasets acquired from four different countries (specific per-database breakdown not given)",
+      "class_imbalance_handling": "Random undersampling of the majority class to match the minority class population, performed separately for each binary per-condition classifier",
+      "augmentation_techniques": "not reported"
+    },
+    "training": {
+      "loss_function": "Precision-Recall Area Under the Curve (AUPRC) minimized during training; F2 metric used for early stopping",
+      "optimizer": "not reported (XGBoost gradient boosting; hyperparameters selected via Grid Search: max_depth=10, eta=0.1, gamma=0, lambda=1, with early stopping)",
+      "cross_validation_strategy": "K-fold cross-validation used both for parameter tuning/robustness checks and for threshold optimization",
+      "hardware": "not reported"
+    },
+    "contribution": {
+      "summary": "Proposes an interpretable per-condition XGBoost classifier for 12-lead ECG classification that augments standard ECG waveform features with information-theoretic measures (Lempel-Ziv complexity and O-Information-based synergy/redundancy across leads) adapted from neuroscience.",
+      "code_available": true,
+      "code_url": "https://github.com/mearlboro/PhysioNet_12ECG"
+    },
+    "entry_type": "team_entry"
+  },
+  {
+    "paper_id": "CinC2020-198",
+    "team_name": "Pink Irish Hat",
+    "authors_affiliation": "Halla Sigurthorsdottir, Jerome Van Zaen, Ricard Delgado-Gonzalo, Mathieu Lemay \u2014 Swiss Center for Electronics and Microtechnology (CSEM), Neuchatel, Switzerland",
+    "result": {
+      "official_challenge_metric_score": 0.167,
+      "official_rank": 24,
+      "evaluation_split": "official hidden test set (full test set score, following official ranking of 24th out of 41)",
+      "self_reported_metrics": {
+        "f1": "not reported",
+        "auroc": "not reported",
+        "sensitivity": "not reported",
+        "specificity": "not reported",
+        "accuracy": "not reported",
+        "other": "Challenge score of 0.511 on the hidden validation set (with optimized threshold 0.3 and TTA); local validation score progression: 0.522 baseline, 0.546 with TTA, 0.573 with optimized threshold; training set score 0.451. Submitting with default threshold 0.5 on hidden validation gave only 0.313."
+      }
+    },
+    "model": {
+      "architecture_family": "Hybrid",
+      "architecture_details": "Convolutional recurrent neural network (CRNN): convolutional block of 5 mini-blocks (3 conv1d layers each, ReLU, skip connections, dropout, ~15 conv layers total, optimized to 16-32-64 filters per mini-block) with global average pooling, feeding a bi-directional GRU (128 hidden units) with input/recurrent dropout, followed by an attention-with-context layer, batch normalization, and a final dense sigmoid layer for multi-label class probabilities.",
+      "key_novelty": "Combines a multi-scale 1D convolutional feature extractor with a bidirectional GRU + hierarchical attention-with-context aggregator over sliding windows, then applies test-time augmentation (10 offset variants averaged) and a tuned decision threshold to improve robustness under the challenge's hardware constraints."
+    },
+    "input": {
+      "leads_used": "8 (12-lead recordings with leads III, aVR, aVL, and aVF excluded as redundant)",
+      "signal_length_window": "Sliding windows over variable-length recordings; random start offset sampled per presentation for augmentation; 10 offsets used at inference for test-time augmentation",
+      "sampling_rate": "Resampled to 257 Hz (the lowest of the dataset's native rates of 257/500/1000 Hz); 100 Hz used during hyperparameter search for efficiency",
+      "preprocessing": "High-pass filter with 0.5 Hz cutoff to remove baseline drift on long recordings; resampling to 257 Hz; per-lead normalization by standard deviation computed over the training set"
+    },
+    "data": {
+      "training_datasets": "Official challenge training data, split 80%/20% into local training and local validation sets, stratified by source dataset and the least common label per recording; no external datasets mentioned",
+      "class_imbalance_handling": "Grouped 111 possible diagnoses into the 27 scored classes plus one aggregated 'negative' class; mapped SVPB/VPB to PAC/PVC as equivalent; tested (but did not adopt, since none improved performance) focal loss, oversampling, MLSMOTE, and an ensemble of binary/multi-label models",
+      "augmentation_techniques": "Random offset for the start of the sliding window at training time; test-time augmentation (TTA) using 10 different input offsets averaged at inference"
+    },
+    "training": {
+      "loss_function": "Binary cross-entropy",
+      "optimizer": "Nadam (Nesterov Adam) with learning rate reduced to 1e-4, selected after comparing SGD, Adam, AMSGrad, and Nadam",
+      "cross_validation_strategy": "Single 80/20 stratified train/local-validation split (not k-fold); epoch with highest local validation score selected as final model; extensive grid search over filters, dropout rates, and decision threshold",
+      "hardware": "not reported (paper notes the challenge imposed hardware limitations that excluded several higher-capacity configurations, e.g. >=64 filters/layer, from being submittable)"
+    },
+    "contribution": {
+      "summary": "Adapts a convolutional-recurrent architecture (CNN feature extractor + bidirectional GRU with attention) for 12-lead ECG multi-label classification, systematically tuning optimizer, filter count, dropout, and decision threshold, and showing test-time augmentation and threshold tuning meaningfully improve the challenge score under hardware constraints.",
+      "code_available": "not reported",
+      "code_url": "not reported"
+    },
+    "entry_type": "team_entry"
+  },
+  {
+    "paper_id": "CinC2020-374",
+    "team_name": "MCIRCC",
+    "authors_affiliation": "Sardar Ansari, Christopher E Gillies, Brandon Cummings, Jonathan Motyka, Guan Wang, Kevin R Ward, Hamid Ghanbari \u2014 University of Michigan / Michigan Center for Integrative Research in Critical Care (MCIRCC), Ann Arbor, MI, USA",
+    "result": {
+      "official_challenge_metric_score": 0.141,
+      "official_rank": 27,
+      "evaluation_split": "official hidden test set (full test score); also report 0.616 on the challenge validation set (hidden)",
+      "self_reported_metrics": {
+        "f1": "not reported",
+        "auroc": "not reported",
+        "sensitivity": "not reported",
+        "specificity": "not reported",
+        "accuracy": "not reported",
+        "other": "Per-class AUROC ranged 0.83-0.99 and per-class AUPRC ranged 0.12-0.97 on the challenge public (training) data for the ensemble model (no single overall number reported)"
+      }
+    },
+    "model": {
+      "architecture_family": "ResNet",
+      "architecture_details": "1D ResNet operating on 12-lead ECGs (12x2500 input at 250Hz for 10s), composed of an input conv layer followed by residual blocks (each: max-pooling with stride 2 + n conv layers + residual connection), repeated m times, then a flatten layer, dropout layer, z dense layers of size f with ReLU, and a final 27-node dense sigmoid output layer. Architecture hyperparameters (n=2-6, m=4-10, k=16-64 filters, filter size s=3-11, dropout p=0-0.5, z=0-2 dense layers, f=32-128) were manually searched (166 networks trained); the final classifier is an ensemble of the 5 top-performing models after transfer learning (median of class scores, mode of binary labels).",
+      "key_novelty": "Pre-trains ResNet models on a very large (1,277,298-recording) proprietary hospital ECG dataset (MUSE, University of Michigan) whose free-text diagnosis labels were mapped to challenge SNOMED-CT codes via UMLS/CUI lookup, then transfers and fully retrains the models on the official challenge data."
+    },
+    "input": {
+      "leads_used": "12",
+      "signal_length_window": "10s fixed window (first 10s taken if longer, zero-padded to 10s if shorter)",
+      "sampling_rate": "250 Hz (all ECGs resampled to 250Hz)",
+      "preprocessing": "Resampling to 250Hz; double median filter (200ms then 600ms) applied per lead to remove baseline wander; 5th-order Butterworth low-pass filter with 40Hz cutoff; truncation/zero-padding to 10s"
+    },
+    "data": {
+      "training_datasets": "All six official challenge training datasets combined; plus a large external proprietary dataset (MUSE, 1,277,298 ECGs from 374,321 patients, University of Michigan, 1990-2012) used for pre-training",
+      "class_imbalance_handling": "not reported",
+      "augmentation_techniques": "not reported"
+    },
+    "training": {
+      "loss_function": "Binary cross-entropy",
+      "optimizer": "Adam, with learning rate reduced by factor of 0.1 if the challenge metric did not improve for 2 consecutive epochs (floor of 0.0001); early stopping if metric did not improve by >=0.01 for 3 consecutive epochs",
+      "cross_validation_strategy": "Not k-fold CV; data split into training (60%), validation (20%), and testing (20%) subsets, for both MUSE pretraining and challenge fine-tuning",
+      "hardware": "not reported"
+    },
+    "contribution": {
+      "summary": "Pre-trains an ensemble of 1D ResNet architectures on a very large proprietary hospital ECG dataset (MUSE) with labels mapped to challenge SNOMED-CT codes via UMLS, then transfers and fully retrains the top models on the official challenge data to build the final classifier.",
+      "code_available": "not reported",
+      "code_url": "not reported"
+    },
+    "entry_type": "team_entry"
+  },
+  {
+    "paper_id": "CinC2020-356",
+    "team_name": "Heartly-AI",
+    "authors_affiliation": "Philipp Sodmann, Marcus Vollmer; Institute of Bioinformatics, University Medicine Greifswald / DZHK (German Centre for Cardiovascular Research), Greifswald, Germany",
+    "result": {
+      "official_challenge_metric_score": 0.136,
+      "official_rank": 28,
+      "evaluation_split": "official hidden test set (28th of 41 teams); also report a 5-fold cross-validation challenge metric of 0.113 on the training data",
+      "self_reported_metrics": {
+        "f1": "not reported",
+        "auroc": "not reported",
+        "sensitivity": "not reported",
+        "specificity": "not reported",
+        "accuracy": "not reported",
+        "other": "On a validation split, only 8 of 24 scored classes reached F1 > 0.5; best per-class F1: atrial fibrillation 0.87, sinus rhythm 0.82, left bundle branch block 0.77. Segmentation sub-network achieved F1 up to 0.98 (QRS-complex, 20ms tolerance), 0.99 (P-wave, 20ms tolerance) and 0.88 (T-wave, 20ms tolerance) on a held-out annotated test split; R-peak F1 of 0.943 at 150ms tolerance on MIT-BIH."
+      }
+    },
+    "model": {
+      "architecture_family": "Hybrid",
+      "architecture_details": "Two-stage pipeline: (1) a UNet-like fully convolutional 1D network (4 down/upsampling levels with skip connections, 50% dropout in bottleneck layers, batchnorm + Mish activation) accepts variable-length 12-lead input and segments the ECG into P-wave/QRS-complex/T-wave regions while also classifying each QRS complex as normal, supraventricular, or ventricular extrasystole; (2) 54 hand-crafted features (timing intervals, wave amplitudes, Frank-lead vectorcardiographic angles, extrasystole proportions) derived from the segmentation output are classified with an XGBoost gradient-boosted-tree model (24 non-exclusive labels).",
+      "key_novelty": "Uses a UNet segmentation network to produce human-interpretable intermediate ECG delineations (P/QRS/T boundaries and beat classification) and derives classical clinical features from these segments for downstream tree-based classification, prioritizing explainability over an end-to-end black-box classifier."
+    },
+    "input": {
+      "leads_used": "12",
+      "signal_length_window": "Arbitrary length (network input shape (None, 12) accepts ECGs of any duration); manually annotated training/validation/test snippets were up to 20s",
+      "sampling_rate": "500 Hz (resampled)",
+      "preprocessing": "Resampled to 500Hz via FFT; bandpass filtered 0.05-42Hz; discrete wavelet transform (Daubechies Db4) with hard thresholding applied as a high-pass filter to remove residual baseline wander"
+    },
+    "data": {
+      "training_datasets": "Official Challenge training data (all sources) for the XGBoost classifier; the UNet segmentation network was trained on a custom-built annotated corpus (573 train / 94 validation / 73 test ECGs, built via an in-house annotation tool, one physician annotator); a separate 740-ECG annotated set was used in a preliminary auxiliary-output experiment not included in the final submission",
+      "class_imbalance_handling": "not reported",
+      "augmentation_techniques": "not reported"
+    },
+    "training": {
+      "loss_function": "Tversky loss (segmentation output); categorical cross-entropy (extrasystole classification output)",
+      "optimizer": "Rectified Adam with LookAhead (Ranger); cosine-annealing learning-rate decay to zero after epoch 140; trained for 200 epochs total",
+      "cross_validation_strategy": "5-fold cross-validation (via hyperopt tree-structured Parzen estimators) used to tune XGBoost hyperparameters; UNet trained/validated/tested on fixed manually annotated splits (573/94/73 ECGs)",
+      "hardware": "not reported"
+    },
+    "contribution": {
+      "summary": "Proposes a two-step, explainable pipeline that first segments 12-lead ECGs into P/QRS/T waves and beat types with a UNet, then extracts classical clinical features from the segmentation for XGBoost classification, trading raw classification performance for interpretability.",
+      "code_available": "not reported",
+      "code_url": "not reported"
+    },
+    "entry_type": "team_entry"
+  },
+  {
+    "paper_id": "CinC2020-277",
+    "team_name": "AI Strollers",
+    "authors_affiliation": "Rohit Pardasani (General Electric Healthcare, Bangalore, India) and Navchetan Awasthi (Massachusetts General Hospital, Harvard University, Boston, USA)",
+    "result": {
+      "official_challenge_metric_score": 0.077,
+      "official_rank": 32,
+      "evaluation_split": "official hidden test set (\"Full Test\")",
+      "self_reported_metrics": {
+        "f1": 0.142,
+        "auroc": 0.599,
+        "sensitivity": "not reported",
+        "specificity": "not reported",
+        "accuracy": 0.0,
+        "other": "Internal challenge validation set score 0.342 (distinct from official hidden Full Test score of 0.077); scores also reported separately for hidden Test 1 (0.212), Test 2 (0.359), and Test 3 (0.096) partitions; per-class thresholds, AUROC, AUPRC and F-measure given for all 24 classes on the validation set (Table 1)"
+      }
+    },
+    "model": {
+      "architecture_family": "CNN",
+      "architecture_details": "24 identical 1D-CNN sub-networks stacked in parallel, one per diagnosis class, each comprising 3 convolutional layers (kernel=11/stride=5/filters=64, kernel=5/stride=2/filters=64, kernel=3/stride=1/filters=1), each followed by ReLU, dropout (0.3), and batch normalization, then a flatten + dropout + dense layer with sigmoid activation producing a single scalar; the 24 per-class scalars are concatenated into a 24-dimensional output vector. Total ~3.8M parameters (3,778,968 trainable, 21,552 non-trainable).",
+      "key_novelty": "Class-dependent threshold approach: instead of training separate multi-class models, each of the 24 parallel CNN branches is thresholded individually (threshold chosen from the ROC curve to maximize TPR-FPR), allowing multi-label/multi-class classification in a single inference pass."
+    },
+    "input": {
+      "leads_used": "12",
+      "signal_length_window": "10000 samples fixed length (~20s at 500 Hz); signals longer than 10000 samples trimmed, shorter signals 'wrap' padded (signal repeated until reaching 10000 samples)",
+      "sampling_rate": "500 Hz",
+      "preprocessing": "Converted to physical units (mV) by dividing by each signal's analog-to-digital gain (gains varied: 200/mV, 4880/mV, 1000/mV); length homogenized via trimming (>10000 samples) or wrap-padding (<10000 samples)"
+    },
+    "data": {
+      "training_datasets": "Official challenge training dataset only (43,101 total samples; 37,619 samples with labels among the 27 scored classes, mapped to 24 classes, were used \u2014 5,482 samples without a scored-class label were excluded); no external data",
+      "class_imbalance_handling": "Class-dependent decision thresholds selected per class via the ROC curve (maximizing TPR-FPR) rather than a fixed 0.5 threshold, applied at inference time",
+      "augmentation_techniques": "not reported"
+    },
+    "training": {
+      "loss_function": "Cross entropy loss",
+      "optimizer": "Adam (learning rate 1e-4; \u03b21=0.99, \u03b21=0.9 [as reported], \u03b5=1e-7, decay=0.0001, amsgrad=False, clipvalue=0.5); L1 (1e-7) and L2 (1e-7) kernel regularizers and L2 (1e-7) bias regularizer",
+      "cross_validation_strategy": "not reported (single random split into training [24,452], validation [5,642], and testing [7,525] subsets; best model selected by validation loss)",
+      "hardware": "Linux workstation with Intel Xeon Silver 4110 CPU (2.10 GHz), 128 GB RAM, TITAN RTX GPU (24 GB); trained for 100 epochs, batch size 128, ~210 seconds/epoch; Keras with TensorFlow backend"
+    },
+    "contribution": {
+      "summary": "Proposes 24 parallel identical 1D-CNN branches (one per diagnosis class) with per-class ROC-optimized decision thresholds, enabling multi-label ECG classification in a single inference pass without training separate multi-class models.",
+      "code_available": "not reported",
+      "code_url": "not reported"
+    },
+    "entry_type": "team_entry"
+  },
+  {
+    "paper_id": "CinC2020-135",
+    "team_name": "Leicester-Fox",
+    "authors_affiliation": "Zheheng Jiang, Tiago P Almeida, Fernando S Schlindwein, G Andre Ng, Huiyu Zhou, Xin Li (University of Leicester, Leicester, UK)",
+    "result": {
+      "official_challenge_metric_score": -0.012,
+      "official_rank": 34,
+      "evaluation_split": "official hidden full test set (abstract: validation score 0.395, full test score -0.012, rank 34/41)",
+      "self_reported_metrics": {
+        "f1": 0.603,
+        "auroc": "not reported",
+        "sensitivity": "not reported",
+        "specificity": "not reported",
+        "accuracy": "not reported",
+        "other": "Internal 5-fold cross-validation ablation (Table 1), not the hidden test set: 1DCNN Challenge Metric 0.503 / F1 0.481; +Res-Blocks 0.554 / 0.526; +Bi-GRU 0.582 / 0.564; +GCN + class-aware BCE (final model) 0.627 / 0.603. Official Challenge validation-phase score reported separately as 0.395."
+      }
+    },
+    "model": {
+      "architecture_family": "Hybrid",
+      "architecture_details": "ECG representation network: 1D convolutional layer + 16 residual blocks (2 conv layers each, filter width 16, filters starting at 32 and doubling every 4th block, stride-2 subsampling every 2nd block, BatchNorm + ReLU + dropout 0.2) followed by a bi-directional GRU layer to extract temporal features; a 3-layer Graph Convolutional Network (GCN) then models inter-label correlations, using a correlation matrix built from label co-occurrence conditional probabilities; final classification via dot product of ECG features and GCN label embeddings, trained with a proposed class-aware binary cross-entropy loss.",
+      "key_novelty": "Combines a CNN+bi-GRU ECG feature extractor with a Graph Convolutional Network that explicitly models label co-occurrence/correlation structure (via a conditional-probability adjacency matrix) for multi-label classification, trained jointly with a novel class-aware BCE loss."
+    },
+    "input": {
+      "leads_used": "12",
+      "signal_length_window": "variable length; recordings shorter than 18 seconds were zero-padded; network outputs one prediction every 512 samples",
+      "sampling_rate": "500 Hz (all recordings resampled to this rate)",
+      "preprocessing": "Resampling to 500 Hz; zero-padding of recordings shorter than 18s"
+    },
+    "data": {
+      "training_datasets": "Official PhysioNet/CinC 2020 Challenge datasets: China Physiological Signal Challenge 2018 (10330 recordings), St. Petersburg INCART 12-lead Arrhythmia Database (75 recordings), PTB (Physikalisch Technische Bundesanstalt, 22386 recordings), and Georgia 12-Lead ECG Challenge Database (10344 recordings); 25 classes used (C=25)",
+      "class_imbalance_handling": "not reported",
+      "augmentation_techniques": "not reported"
+    },
+    "training": {
+      "loss_function": "Proposed class-aware binary cross-entropy loss (incorporates GCN label-embedding dot product with ECG features), compared against standard BCE in ablations",
+      "optimizer": "Adam (stochastic gradient descent variant), learning rate 0.001, reduced by factor of 10 when validation loss plateaus for 2 consecutive epochs; batch size 32; 100 epochs",
+      "cross_validation_strategy": "5-fold cross-validation on the training set for ablation experiments",
+      "hardware": "not reported"
+    },
+    "contribution": {
+      "summary": "Proposes an end-to-end multi-label ECG classifier that pairs a CNN+bi-GRU feature extractor with a Graph Convolutional Network encoding label co-occurrence correlations, trained via a new class-aware BCE loss, showing incremental gains from residual blocks, bi-GRU, and GCN in ablation.",
+      "code_available": "not reported",
+      "code_url": "not reported"
+    },
+    "entry_type": "team_entry"
+  },
+  {
+    "paper_id": "CinC2020-424",
+    "team_name": "deepzx987",
+    "authors_affiliation": "Deepankar Nankani, Pallabi Saikia, Rashmi Dutta Baruah; Indian Institute of Technology Guwahati, Assam, India",
+    "result": {
+      "official_challenge_metric_score": -0.035,
+      "official_rank": 35,
+      "evaluation_split": "official hidden test set (full test set); paper also reports scores on a 20% holdout validation split (0.305) and stratified 10-fold cross-validation on training data (0.21\u00b10.04)",
+      "self_reported_metrics": {
+        "f1": 0.182,
+        "auroc": 0.742,
+        "sensitivity": "not reported",
+        "specificity": "not reported",
+        "accuracy": 0.181,
+        "other": "Full test set AUPRC 0.229. Additional splits reported: validation data (AUROC 0.825, AUPRC 0.326, Accuracy 0.331, F-measure 0.286, Challenge score 0.305) and three partial 'Test Data' subsets (challenge scores 0.648, 0.25, -0.287)."
+      }
+    },
+    "model": {
+      "architecture_family": "ResNet",
+      "architecture_details": "8-layer 1D convolutional ResNet: 1-D convolution, batch normalization, dropout, max pooling, and skip connections; 64 filters of size 16x1, stride 1; final dense layer of 27 neurons with softmax. Weights initialized with Xavier initialization; ReLU activations; dropout probability 0.5.",
+      "key_novelty": "Systematically benchmarks 17 deep learning architectures (CNN/ResNet, RNN variants (LSTM/GRU/BiLSTM/BiGRU), CNN+RNN hybrids, and RNN/hybrid models with an attention mechanism) for concurrent arrhythmia classification, showing a simple 8-layer ResNet with skip connections outperforms far more complex recurrent and attention-augmented models while training orders of magnitude faster."
+    },
+    "input": {
+      "leads_used": "12",
+      "signal_length_window": "2500-sample fixed-length segments extracted from each record (original record lengths ranged from 2500 to 462600 samples)",
+      "sampling_rate": "not reported",
+      "preprocessing": "Records segmented into 2500-sample windows and labelled per the record's diagnosis; only the first label of each multi-label record was used for training and only a single class predicted per record at test time; at inference, predictions across all segments of a record were averaged and the most frequently predicted class chosen."
+    },
+    "data": {
+      "training_datasets": "All six official Challenge 2020 training databases (PTB-XL, PTBDB, INCART, CPSC2018, CPSC-Extra, Georgia DB); no external data",
+      "class_imbalance_handling": "not reported",
+      "augmentation_techniques": "not reported"
+    },
+    "training": {
+      "loss_function": "not reported",
+      "optimizer": "not reported",
+      "cross_validation_strategy": "Main dataset split 80% training / 20% validation for hyperparameter tuning; final ResNet model additionally evaluated with stratified 10-fold cross-validation; early stopping on validation accuracy (patience 5 epochs)",
+      "hardware": "Intel Xeon processor, 32 GB RAM, NVIDIA GeForce Titan Xp GPU with 12 GB GDDR6 VRAM; batch-wise training (batch size 16) via Keras generator to avoid loading full dataset into memory"
+    },
+    "contribution": {
+      "summary": "Benchmarks 17 deep learning architectures (CNN, RNN, CNN+RNN hybrids, and attention-augmented variants) for 12-lead ECG arrhythmia classification and shows that a simple 8-layer 1D ResNet outperforms substantially more complex RNN/attention-based and hybrid models on both challenge score and training time.",
+      "code_available": "not reported",
+      "code_url": "not reported"
+    },
+    "entry_type": "team_entry"
+  },
+  {
+    "paper_id": "CinC2020-297",
+    "team_name": "Cordi-Ak",
+    "authors_affiliation": "Paul Samuel Ignacio, Jay-Anne Bulauan, John Rick Manzanares; University of the Philippines Baguio, Baguio City, Philippines",
+    "result": {
+      "official_challenge_metric_score": -0.113,
+      "official_rank": 37,
+      "evaluation_split": "official hidden full test set (score -0.113); official challenge validation score of 0.304 also reported separately; additionally a 3-fold cross validation on the full training set was performed",
+      "self_reported_metrics": {
+        "f1": 0.255,
+        "auroc": 0.846,
+        "sensitivity": "not reported",
+        "specificity": "not reported",
+        "accuracy": 0.209,
+        "other": "3-fold CV on training set: AUPRC 0.322, challenge metric 0.219. Official validation-set scores: AUPRC 0.299, AUROC 0.815, Accuracy 0.083, F-measure 0.238, challenge metric 0.304. Per-database full test scores (Test1/Test2/Test3) also reported, ranging from challenge metric 0.254 down to -0.387. Challenge-released baseline random forest classifier scored 0.076 on the validation set for comparison."
+      }
+    },
+    "model": {
+      "architecture_family": "Ensemble",
+      "architecture_details": "Not a neural network: a two-level classical Random Forest classifier (max depth 20, sqrt max-features rule). Level 1 RF separates scored vs. unscored classes; Level 2 uses two separate RFs (one for scored classes with 400 features/600 trees, one for unscored classes with 200 features/200 trees), all trained on topological data analysis (TDA) features plus demographic data and RR-interval statistical moments.",
+      "key_novelty": "Uses topological data analysis (persistent homology on point-cloud embeddings of grouped ECG leads/segments) to generate mathematically computed topological signatures as a substitute for expert-informed features, feeding a two-level random forest classifier."
+    },
+    "input": {
+      "leads_used": "12 (used in 7 different lead groupings per segment: one grouping spans all 12 leads, others represent clinically-referenced lead subsets covering all 12 leads collectively)",
+      "signal_length_window": "Three 1800-time-point segments taken from the beginning, middle, and end of each ECG recording; each segment further downsampled to 300 equally spaced time slices per lead grouping for point cloud embedding",
+      "sampling_rate": "not reported",
+      "preprocessing": "ECG viewed as multivariate time series; segmented into 3 portions (beginning/middle/end of 1800 time points each); converted into point-cloud embeddings per lead grouping (300 equally spaced time slices); persistent homology (via Ripser) computed on point clouds to derive topological features (barcode statistics, persistence landscapes, persistence entropy for dimensions 0 and 1); supplemented with demographic data and RR-interval statistical moments (Pan-Tompkins-based, via the Challenge-supplied toolbox)"
+    },
+    "data": {
+      "training_datasets": "PhysioNet/Computing in Cardiology Challenge 2020 official training data (full training set used for 3-fold cross validation); no external data reported. A total of 1238 features extracted per ECG.",
+      "class_imbalance_handling": "not reported (beyond the two-level scored/unscored class split used to structure the random forest training)",
+      "augmentation_techniques": "not reported"
+    },
+    "training": {
+      "loss_function": "not reported (Random Forest classifier; not applicable in the neural-network loss-function sense)",
+      "optimizer": "not reported (Random Forest classifier; not applicable)",
+      "cross_validation_strategy": "3-fold cross validation on the full training set; features ranked by importance via Scikit-learn and a shortlist used for re-training at each random forest level",
+      "hardware": "not reported"
+    },
+    "contribution": {
+      "summary": "Proposes replacing expert-informed ECG features with mathematically computed topological signatures (via persistent homology on point-cloud embeddings of ECG lead segments) to train a two-level random forest classifier for 12-lead ECG multi-label classification, reducing reliance on expert-designed features.",
+      "code_available": "not reported",
+      "code_url": "not reported"
+    },
+    "entry_type": "team_entry"
+  },
+  {
+    "paper_id": "CinC2020-339",
+    "team_name": "MIndS",
+    "authors_affiliation": "Marwen Sallem, Amina Ghrissi, Adnen Saadaoui, Vicente Zarzoso; National Institute of Applied Sciences and Technology, MMA Laboratory (Tunisia); Universit\u00e9 C\u00f4te d'Azur, CNRS, I3S Laboratory (France); Vneuron (Tunisia)",
+    "result": {
+      "official_challenge_metric_score": -0.128,
+      "official_rank": 38,
+      "evaluation_split": "official hidden test set",
+      "self_reported_metrics": {
+        "f1": "not reported",
+        "auroc": "not reported",
+        "sensitivity": "not reported",
+        "specificity": "not reported",
+        "accuracy": 0.54,
+        "other": "Challenge validation score S=0.368 (hidden validation set); accuracy 0.54 is validation accuracy of the retained model. Preliminary (unofficial phase) 5-fold CV training scores: F2-score=0.77, G2-score=0.58, GM=0.67 (zero padding); F2=0.74, G2=0.54, GM=0.63 (signal repetition). Preliminary test set: F2-score=0.77, G2-score=0.55, GM=0.65."
+      }
+    },
+    "model": {
+      "architecture_family": "CNN",
+      "architecture_details": "VGG-ECG: a 13-layer fully convolutional 1D CNN inspired by VGG16, composed of blocks of 2-3 successive Conv3 (1x3 receptive field) layers alternated with average pooling layers; channel widths progress 64,64 / 128,128 / 256,256 (x4 blocks); dropout (p=0.3) for regularization.",
+      "key_novelty": "Adapts the VGG16 image-classification architecture to 1D multichannel ECG by using a deep stack of small-receptive-field (1x3) convolutions with average pooling, combined with truncation/zero-padding and downsampling strategies to standardize variable-length, multi-source recordings."
+    },
+    "input": {
+      "leads_used": "12",
+      "signal_length_window": "First 3000 time samples after downsampling kept (recordings originally 10s to 30min); shorter signals zero-padded or repeated to fill length. Preliminary experiments used the first 18000 samples of padded recordings.",
+      "sampling_rate": "Downsampled to 100 Hz (benchmarked against 50 Hz and 150 Hz; original recordings had varying sampling frequencies depending on data source)",
+      "preprocessing": "Downsampling to a standard frequency (100 Hz found best), truncation to first 3000 samples, zero padding or signal repetition for length standardization. Low-pass filtering and standard normalization were tested but did not improve scores."
+    },
+    "data": {
+      "training_datasets": "All official Challenge 2020 training data: 43101 12-lead ECG recordings from four data sources, filtered down to 37794 recordings belonging to at least one of the 27 scored classes; no external data used.",
+      "class_imbalance_handling": "Class weights applied to neural network nodes to balance classes during training.",
+      "augmentation_techniques": "not reported (proposed as future work, not implemented in this study)"
+    },
+    "training": {
+      "loss_function": "Binary cross-entropy (chosen over mean squared error, which performed worse)",
+      "optimizer": "Adam, learning rate 1e-3",
+      "cross_validation_strategy": "5-fold cross-validation used in preliminary experiments; final model trained on a 3/4 train / 1/4 validation split of the dataset",
+      "hardware": "Google Cloud Platform, n1-standard-4 instance (4 vCPUs, 15GB memory), NVIDIA Tesla T4 GPU; implemented in Python 3.7 / TensorFlow 2.3, tracked with Weights & Biases (Wandb)"
+    },
+    "contribution": {
+      "summary": "Proposes VGG-ECG, a deep 1D CNN inspired by VGG16, for multilabel 12-lead ECG rhythm classification, and addresses variable-length, multi-source recordings via signal truncation/padding and downsampling to a common sampling rate.",
+      "code_available": "not reported",
+      "code_url": "not reported"
+    },
+    "entry_type": "team_entry"
+  },
+  {
+    "paper_id": "CinC2020-148",
+    "team_name": "easyG",
+    "authors_affiliation": "Martin Baumgartner, Alphons Eggerth, Andreas Ziegl, Dieter Hayn, G\u00fcnter Schreier; AIT Austrian Institute of Technology, Graz, Austria",
+    "result": {
+      "official_challenge_metric_score": -0.29,
+      "official_rank": 39,
+      "evaluation_split": "official hidden test set (score obtained with a trimmed, generic single-DNN submission made due to technical difficulties); the full multi-stream approach was only evaluated offline via 5-fold cross-validation on the 6 public training datasets",
+      "self_reported_metrics": {
+        "f1": "not reported",
+        "auroc": "not reported",
+        "sensitivity": "not reported",
+        "specificity": "not reported",
+        "accuracy": "not reported",
+        "other": "Official validation score of 0.403 for the trimmed generic-DNN submission (ranked 39th of 41 on test); offline 5-fold CV weighted-average challenge metric of 0.612 for the full multi-stream (combined) model across the 6 public training datasets (vs. 0.608 for features-only and 0.571 for signals-only variants)"
+      }
+    },
+    "model": {
+      "architecture_family": "Hybrid",
+      "architecture_details": "Multi-stream network with two parallel branches concatenated by a final sigmoid-activated fully connected classification layer: (1) a feature stream \u2014 hand-crafted per-lead features (averaged beat, beat, atrial, rhythm, signal, QRS, and meta categories, 386 features total) fed into a 2-layer MLP (1024 nodes, dropout 0.08; then 128 nodes, dropout 0.1; leaky ReLU + batch normalization per layer); (2) a deep convolutional stream based on the 2018 CPSC-challenge winning model \u2014 5 sequential 1D-convolutional blocks (each with three 1D-conv layers, 12 filters, kernel sizes 3/3/24 except kernel 48 in the final block, leaky ReLU, dropout 0.2), followed by a bidirectional GRU (20 nodes, dropout 0.2), an attention layer, and batch normalization. Separate models were trained per data source and combined via an ensemble with majority voting.",
+      "key_novelty": "Concatenates a hand-engineered-feature MLP stream with a raw-signal deep CNN+BiGRU+attention stream into one jointly trained multi-stream model, and trains separate per-dataset-source models combined via ensemble majority voting to handle heterogeneous labeling pools across data sources."
+    },
+    "input": {
+      "leads_used": "12",
+      "signal_length_window": "not reported",
+      "sampling_rate": "not reported",
+      "preprocessing": "Raw signals filtered with a 2nd-order Butterworth bandpass filter (0.1-30 Hz) before the convolutional stream; a separate hand-crafted feature-extraction pipeline (386 per-lead features across 7 categories, per prior work [Kropf et al.]) supplies the MLP stream"
+    },
+    "data": {
+      "training_datasets": "All 6 official challenge training sources: CPSC (6,877), CPSC-Extra (3,453), INCART (74), PTB (516), PTB-XL (21,837), Georgia (10,344); no external (non-challenge) data reported",
+      "class_imbalance_handling": "Separate model trained per data source to account for differing label pools/diagnosing criteria across sources; extremely rare classes (under 1% of total labels within a given dataset) excluded from that dataset's model to reduce class-space complexity",
+      "augmentation_techniques": "not reported"
+    },
+    "training": {
+      "loss_function": "Binary cross-entropy",
+      "optimizer": "Adam (learning rate 0.001, beta1 = 0.9)",
+      "cross_validation_strategy": "5-fold cross-validation per dataset, in 3 variations (features-only, signals-only, combined); the 4 larger datasets (CPSC, CPSC-Extra, PTB-XL, Georgia) trained for 200 epochs, the 2 smaller datasets (PTB, INCART) trained for 500 epochs",
+      "hardware": "not reported"
+    },
+    "contribution": {
+      "summary": "Proposes a multi-stream architecture that combines a hand-crafted-feature MLP with a raw-signal CNN+BiGRU+attention network, trained as per-data-source ensembles, and shows offline that the combined model's weighted-average challenge score (0.612) beats either single stream alone \u2014 although the official leaderboard entry was a trimmed, feature-less single-DNN submitted due to technical issues, which scored poorly (test -0.290, ranked 39th of 41).",
+      "code_available": "not reported",
+      "code_url": "not reported"
+    },
+    "entry_type": "team_entry"
+  },
+  {
+    "paper_id": "CinC2020-406",
+    "team_name": "BiSP Lab",
+    "authors_affiliation": "Matteo Bodini, Massimo W Rivolta, Roberto Sassi \u2014 Dipartimento di Informatica \"Giovanni Degli Antoni\", Universita degli Studi di Milano, Milan, Italy",
+    "result": {
+      "official_challenge_metric_score": -0.179,
+      "official_rank": 40,
+      "evaluation_split": "official private (hidden) test set; also report 0.241 on their own validation set prior to the private test",
+      "self_reported_metrics": {
+        "f1": "not reported",
+        "auroc": "not reported",
+        "sensitivity": "not reported",
+        "specificity": "not reported",
+        "accuracy": "not reported",
+        "other": "Per-class recall values reported (e.g., RBBB 0.93, LBBB 0.85, I-AVB 0.88; worst: Pacing 0.71, Flutter 0.74, normal-ECG detection 0.74); PVC detection AUROC 0.82 with true positive/negative rates of 0.72 at a 1.44 mV threshold; self-reported validation score of 0.241 (Challenge metric) before private test evaluation"
+      }
+    },
+    "model": {
+      "architecture_family": "Ensemble",
+      "architecture_details": "Ensemble of four classifiers: three CNNs (P-CNN, QRS-CNN, T-CNN), each with one or more convolutional layers plus a fully connected layer, operating on concatenated multi-lead average P/QRS/T segments extracted from an averaged PQRST beat template, to classify morphology-altering abnormalities; a feed-forward neural network (Rhythm-NN, two hidden layers of 64 and 32 neurons) using RR-interval-derived features (median, std, min/max distance, RMSSD) for irregular-rhythm classes; and a threshold-based classifier on the vector-magnitude signal's maximum amplitude for PVC detection. Outputs of all sub-models are concatenated into the final label vector; \"normal\" is assigned only when no other abnormality is detected.",
+      "key_novelty": "Combines classical average-template/segment-based ECG signal processing (per-lead averaged P, QRS, and T segments) with small dedicated CNNs per segment type and rhythm-only features, rather than feeding raw whole ECG signals into one large deep network."
+    },
+    "input": {
+      "leads_used": "12",
+      "signal_length_window": "First 1-minute segment of each ECG (or less if shorter); average-beat templates built from R-260ms to R+370ms per lead (P segment R-260 to R-150ms, QRS R-50 to R+50ms, T R+100 to R+370ms)",
+      "sampling_rate": "500 Hz (downsampled or upsampled to 500Hz)",
+      "preprocessing": "Resampling to 500Hz; bandpass Butterworth filter (3rd order, zero-phase, 0.67-30Hz); beat detection via gqrs on vector magnitude, refined with the Woody algorithm; signal-quality check via average QRS cross-correlation (threshold 0.9), discarding 4752 low-quality signals; construction of per-lead average PQRST templates"
+    },
+    "data": {
+      "training_datasets": "All official challenge training data (43,101 ECGs merged from Southeast University/China Physiological Signal Challenge 2018, St. Petersburg INCART, PTB (Physikalisch Technische Bundesanstalt), and Georgia 12-Lead ECG Challenge Database); no external data",
+      "class_imbalance_handling": "not reported",
+      "augmentation_techniques": "not reported"
+    },
+    "training": {
+      "loss_function": "Average binary cross-entropy across classes (CNNs and FFNN)",
+      "optimizer": "Adam (epsilon=1e-8, beta1=0.9, beta2=0.999), batch size 64, 1000 epochs",
+      "cross_validation_strategy": "Stratified 70/30 train/validation split per sub-model dataset; final submitted model retrained on all available data without splitting",
+      "hardware": "not reported"
+    },
+    "contribution": {
+      "summary": "Proposes a hybrid ensemble that combines classical average-template ECG signal processing (per-lead P/QRS/T segment averaging and RR-interval features) with small dedicated neural networks per abnormality type, rather than training one large deep network on raw ECG signals.",
+      "code_available": "not reported",
+      "code_url": "not reported"
+    },
+    "entry_type": "team_entry"
+  },
+  {
+    "paper_id": "CinC2020-139",
+    "team_name": "EASTBLUE",
+    "authors_affiliation": "Ao Ran, Dongsheng Ruan, Yuan Zheng, Huafeng Liu; Zhejiang University, China",
+    "result": {
+      "official_challenge_metric_score": "not reported",
+      "official_rank": "not reported",
+      "evaluation_split": "Unable to score/rank on the official hidden validation and test sets; results reported via 5-fold cross-validation on the training set",
+      "self_reported_metrics": {
+        "f1": "not reported",
+        "auroc": "not reported",
+        "sensitivity": "not reported",
+        "specificity": "not reported",
+        "accuracy": "not reported",
+        "other": "5-fold CV challenge score of 0.7030 \u00b1 0.0090 for the proposed EASTNet model (best among compared models: SVM 0.5611 \u00b1 0.0156, LSTM 0.5937 \u00b1 0.0119, 1D-ResNet34 0.6760 \u00b1 0.0044, 1D-ResNet34+SEblock 0.6856 \u00b1 0.0132, 1D-ResNet34+MLP 0.6875 \u00b1 0.0121)"
+      }
+    },
+    "model": {
+      "architecture_family": "ResNet",
+      "architecture_details": "EASTNet: a 34-layer 1D ResNet (modified from 2D image ResNet) with 1D Squeeze-and-Excitation (SE) blocks embedded in each residual basic block, followed by a multi-layer perceptron (MLP) classification head (512 -> 256 -> 24 nodes). First convolution kernel enlarged to size 15 to increase receptive field, followed by a 7x7 convolution; max pooling replaced with a strided convolutional layer; dropout layers added for robustness.",
+      "key_novelty": "Combines a heartbeat-level random sampling data augmentation strategy (concatenating several randomly selected single-heartbeat segments as one input) with a 1D SE-ResNet feature encoder whose SE blocks let the network learn inter-lead channel importance."
+    },
+    "input": {
+      "leads_used": "12",
+      "signal_length_window": "Input formed from multiple intercepted single-heartbeat segments (four randomly sampled beats used as the final input after comparing 1-6 beats)",
+      "sampling_rate": "not reported (each intercepted heartbeat resampled to 300 sample points)",
+      "preprocessing": "Baseline drift removal, 3-45 Hz FIR band-pass filtering, R-peak detection, heartbeat interception around the R-peak, resampling of each beat segment to 300 points, then random sampling/combination of heartbeats as input"
+    },
+    "data": {
+      "training_datasets": "Official challenge training set only, filtered/cleaned to 6720 valid records (201600 extracted heartbeats); no external data reported",
+      "class_imbalance_handling": "Statistics collected per abnormality class, then selective discarding and duplication of records to balance the class distribution as much as possible",
+      "augmentation_techniques": "Random combination of intercepted single-heartbeat segments (compared 1-6 beats, both continuous and random sampling; 4 random beats chosen as final input) used explicitly as a data augmentation method that reduces overfitting"
+    },
+    "training": {
+      "loss_function": "not reported",
+      "optimizer": "not reported",
+      "cross_validation_strategy": "5-fold cross-validation on the training set (also compared against 3-fold and 4-fold CV for robustness)",
+      "hardware": "not reported"
+    },
+    "contribution": {
+      "summary": "Proposes EASTNet, a 1D SE-ResNet+MLP model trained on randomly sampled/combined single-heartbeat segments rather than whole ECG records, and shows via 5-fold CV that this beat-sampling augmentation reduces overfitting and outperforms SVM, LSTM, and plain 1D-ResNet34 baselines, though the team could not obtain an official leaderboard score/rank.",
+      "code_available": "not reported",
+      "code_url": "not reported"
+    },
+    "entry_type": "team_entry"
+  },
+  {
+    "paper_id": "CinC2020-144",
+    "team_name": "CardioLux",
+    "authors_affiliation": "Sebasti\u00e1n Cajas, Pedro Astaiza, David Santiago Garcia-Chicangana, Camilo Segura, Diego M Lop\u00e9z; University of Cauca, Popay\u00e1n, Colombia",
+    "result": {
+      "official_challenge_metric_score": "not reported",
+      "official_rank": "not reported",
+      "evaluation_split": "10-fold cross-validation on the training set; the paper states the full approach could not be submitted for the official challenge testing score due to lack of computational resources/time",
+      "self_reported_metrics": {
+        "f1": "not reported",
+        "auroc": "not reported",
+        "sensitivity": "not reported",
+        "specificity": "not reported",
+        "accuracy": "not reported",
+        "other": "Challenge score of 0.22 obtained via 10-fold cross-validation on the training set using the final CNN model"
+      }
+    },
+    "model": {
+      "architecture_family": "CNN",
+      "architecture_details": "1D convolutional neural network (1D-CNN) with 4 output filters, kernel size 4, stride 1, taking the 27 PCA-selected features as a sequence input, with ReLU activation. RNN, LSTM, and CNN+LSTM hybrid architectures were also tried but the CNN performed best.",
+      "key_novelty": "Uses classical signal-processing feature engineering (300 time/frequency/statistical/non-linear features per lead, PCA-reduced to 27) as the input representation for a lightweight 1D-CNN, rather than feeding raw ECG waveforms directly into the network."
+    },
+    "input": {
+      "leads_used": "12",
+      "signal_length_window": "not reported (feature-based pipeline; per-record input reduced to a 27-feature vector rather than a fixed raw-waveform window)",
+      "sampling_rate": "not reported",
+      "preprocessing": "Savitzky-Golay smoothing filter selected for denoising (compared against Symlet- and Daubechies-family wavelet decomposition/thresholding); custom detrending method to remove baseline drift; missing categorical fields (e.g. sex) imputed with the mean value; features normalized using the Keras normalization module"
+    },
+    "data": {
+      "training_datasets": "Official challenge training set only (reported as 6877/\"more than 6800\" ECG recordings overall; 4813 records shown feeding the feature-extraction pipeline in Figure 1); no external data reported",
+      "class_imbalance_handling": "not reported",
+      "augmentation_techniques": "not reported"
+    },
+    "training": {
+      "loss_function": "not reported",
+      "optimizer": "not reported",
+      "cross_validation_strategy": "10-fold cross-validation (K-fold, via scikit-learn) on the training set",
+      "hardware": "not reported"
+    },
+    "contribution": {
+      "summary": "Extracts 300 time-, frequency-, statistical-, and non-linear-domain features per lead, selects 27 via PCA-based feature selection, and classifies 9 arrhythmia classes with a compact 1D-CNN, prioritizing model interpretability over end-to-end raw-signal deep learning.",
+      "code_available": "not reported",
+      "code_url": "not reported"
+    },
+    "entry_type": "team_entry"
+  },
+  {
+    "paper_id": "CinC2020-162",
+    "team_name": "Triology",
+    "authors_affiliation": "Yunkai Yu, Yuyang You (Beijing Institute of Technology); Zhihong Yang (Institute of Medicinal Plant Development, Chinese Academy of Medical Sciences); Peiyao Li (Tsinghua University); Zhicheng Yang (PAII Inc, Palo Alto, USA), Beijing, China / Palo Alto, USA",
+    "result": {
+      "official_challenge_metric_score": "not reported",
+      "official_rank": "not reported",
+      "evaluation_split": "Offline validation split only (80%/20% train/validation split of the pooled training databases, all 24 categories present in both); no official hidden test set score or official leaderboard rank is reported in the paper",
+      "self_reported_metrics": {
+        "f1": "not reported",
+        "auroc": "not reported",
+        "sensitivity": "not reported",
+        "specificity": "not reported",
+        "accuracy": "not reported",
+        "other": "Challenge metric score of 0.328 on their own offline validation set (20% held-out split); paper notes false positives were the main source of error in this offline validation (abstract states false negatives are the main errors, but Section 4 states false positives are major errors - both phrasings appear in the paper)"
+      }
+    },
+    "model": {
+      "architecture_family": "ResNet",
+      "architecture_details": "Lightweight 1-D ResNet-18-based backbone (12 leads treated as input channels) with two parallel convolutional branches of the same kernel size (3) but different dilation rates (1 and 2) for multi-scale feature extraction, instance normalization instead of batch normalization, and anti-aliased downsampling blocks (max-pool with stride 1 followed by a blur-pooling layer with stride 2, per Zhang 2019) for shift invariance. Age and sex are concatenated with the pooled feature vector before two fully-connected layers and a combined sigmoid/softmax output layer. Input records are split into fixed-length segments processed independently, with segment-level probabilities averaged (soft voting) to produce a record-level prediction.",
+      "key_novelty": "Combines anti-aliased (blur-pooled) downsampling blocks with a very low 80 Hz sampling rate to build a lightweight, real-time-capable ECG classifier, and randomly alternates between weighted cross-entropy (softmax) and Lov\u00e1sz-softmax (sigmoid) losses during training to encourage inter-class competition in the multi-label setting."
+    },
+    "input": {
+      "leads_used": "12",
+      "signal_length_window": "Variable-length records split into fixed-size segments (segment length n samples; per-segment predictions averaged for the record-level output)",
+      "sampling_rate": "80 Hz (downsampled; authors compared 60, 80, and 100 Hz and selected 80 Hz to balance information content vs. lightweight computation)",
+      "preprocessing": "Downsampling to 80 Hz; per-lead mean subtraction; exclusion of records with signal absence or high noise (based on a standard-deviation threshold)"
+    },
+    "data": {
+      "training_datasets": "Pooled official Challenge training data from four sources: CPSC2018 (training + unused data), St Petersburg INCART 12-lead Arrhythmia Database, PTB (PTB Diagnostic ECG Database, 549 records, and PTB-XL, 21,837 records), and the Georgia database (Emory University). No external (non-Challenge) data used.",
+      "class_imbalance_handling": "Undersampling: randomly removed 30% of normal-class records from the training set to address the long-tailed class distribution (Normal class dominant)",
+      "augmentation_techniques": "Gaussian noise addition, random erasing, and random shifting"
+    },
+    "training": {
+      "loss_function": "Randomly alternates per batch (via a uniform random variable v) between weighted cross-entropy loss (applied to softmax outputs) and Lov\u00e1sz-softmax loss (applied to sigmoid outputs) to encourage inter-class competition",
+      "optimizer": "Adam optimizer, learning rate 0.0003, with gradient accumulation and back-propagation every 64 records; dropout probability 0.3",
+      "cross_validation_strategy": "Simple 80/20 train/validation split of the pooled dataset (not k-fold cross-validation); challenge metric evaluated on the validation set every 3 epochs with best parameters saved",
+      "hardware": "not reported"
+    },
+    "contribution": {
+      "summary": "Proposes a lightweight, real-time-capable 12-lead ECG classifier that runs on heavily downsampled (80 Hz) signals using a ResNet-18-based backbone with anti-aliased (blur-pool) downsampling and multi-scale dilated convolutions, plus a randomized dual-loss (cross-entropy/Lov\u00e1sz-softmax) training scheme and age/sex features.",
+      "code_available": "not reported",
+      "code_url": "not reported"
+    },
+    "entry_type": "team_entry"
+  },
+  {
+    "paper_id": "CinC2020-196",
+    "team_name": "MetaHeart",
+    "authors_affiliation": "Zhengling He, Pengfei Zhang, Lirui Xu, Zhongrui Bai, Hao Zhang, Weisong Li, Pan Xia, Xianxiang Chen; State Key Laboratory of Transducer Technology, Aerospace Information Research Institute, Chinese Academy of Sciences, Beijing, China",
+    "result": {
+      "official_challenge_metric_score": 0.37,
+      "official_rank": "not reported (team states they were not ranked due to omissions in their submission)",
+      "evaluation_split": "official hidden test set (full test set); also reported per hidden database subset and on a validation leaderboard set",
+      "self_reported_metrics": {
+        "f1": "not reported",
+        "auroc": "not reported",
+        "sensitivity": "not reported",
+        "specificity": "not reported",
+        "accuracy": "not reported",
+        "other": "Challenge metric breakdown: Validation Set 0.616, Hidden CPSC Set 0.758, Hidden G12EC Set 0.590, Hidden Undisclosed Set 0.194, Full Test Set 0.370. Average 5-fold cross-validation challenge metric on public training data: 0.621 (ablation study best configuration; other configurations ranged 0.569-0.607)."
+      }
+    },
+    "model": {
+      "architecture_family": "CNN",
+      "architecture_details": "2-D convolutional neural network treating the 12-lead ECG as a 2D input with 'lead' and 'sample' dimensions; stacked Block1/Block2/Block3 residual-style convolutional blocks with decaying filter sizes and strides, Squeeze-and-Excitation (SE) channel attention modules, batch normalization, spatial dropout, and a global average pooling layer feeding a fully-connected sigmoid output layer for 27-class multi-label prediction.",
+      "key_novelty": "Represents multi-lead ECG as a 2-D [lead, time] tensor (rather than converting to a time-frequency image) and controls cross-lead information fusion by progressively widening the convolution filter size along the lead dimension in deeper blocks, combined with SE attention."
+    },
+    "input": {
+      "leads_used": "12",
+      "signal_length_window": "first 10 seconds of each record (chosen as the median record length), truncated or zero-padded to a consistent 10s length",
+      "sampling_rate": "downsampled to 100 Hz (source data ranged 257-1000 Hz)",
+      "preprocessing": "Band-pass filter with cutoff 0.05-20 Hz to remove baseline drift and high-frequency noise; Z-score normalization applied per lead."
+    },
+    "data": {
+      "training_datasets": "43,101 subjects from the 4 officially published Challenge training data sources; no external data reported",
+      "class_imbalance_handling": "Weighted binary cross-entropy loss with per-class weights w_i = log2(1 / (n_i/N + \u03b5)), \u03b5=0.01, based on class frequency",
+      "augmentation_techniques": "not reported"
+    },
+    "training": {
+      "loss_function": "Weighted binary cross-entropy",
+      "optimizer": "Adam, initial learning rate 0.001, with early stopping and learning-rate reduction (factor 0.5) on plateau",
+      "cross_validation_strategy": "5-fold cross-validation on the public training data for verification/tuning; within each split, data further divided 8:2 train/test and the training portion 9:1 train/validation for hyperparameter selection",
+      "hardware": "not reported"
+    },
+    "contribution": {
+      "summary": "Proposes a 2-D CNN with residual-style blocks and Squeeze-and-Excitation attention that represents 12-lead ECG as a 2-D [lead, time] tensor, progressively fusing cross-lead information in deeper layers via widening convolution kernels along the lead axis.",
+      "code_available": "not reported",
+      "code_url": "not reported"
+    },
+    "entry_type": "team_entry"
+  },
+  {
+    "paper_id": "CinC2020-202",
+    "team_name": "not reported",
+    "authors_affiliation": "David Assaraf, Jeremy Levy, Janmajay Singh, Armand Chocron, Joachim A. Behar \u2014 Faculty of Biomedical Engineering, Technion-IIT, Haifa, Israel (Janmajay Singh: independent researcher)",
+    "result": {
+      "official_challenge_metric_score": "not reported",
+      "official_rank": "not reported",
+      "evaluation_split": "Local 80%/20% stratified train-test split and 5-fold cross-validation on training data only; authors state they 'did not manage to score our models on the Challenge hidden test set' for technical reasons",
+      "self_reported_metrics": {
+        "f1": "not reported",
+        "auroc": "not reported",
+        "sensitivity": "not reported",
+        "specificity": "not reported",
+        "accuracy": "not reported",
+        "other": "Challenge score (self-reported, not official): Feature-Engineering (FE) model 0.65 local test / 0.66+/-0.02 5-fold CV; Deep Learning (DL) model 0.52 local test / 0.54+/-0.04 5-fold CV; Ensemble (EL) model 0.66 local test / 0.66+/-0.03 5-fold CV. Per-class F-beta scores also reported in Table 3 (e.g. F_AF: FE 0.91, DL 0.41, EL 0.92; F_SNR: FE 0.80, DL 0.90, EL 0.86)."
+      }
+    },
+    "model": {
+      "architecture_family": "Ensemble",
+      "architecture_details": "Combines two independently trained models via logistic-regression stacking: (1) a feature-engineering (FE) pipeline \u2014 113 morphological biomarkers (via wavedet delineation) plus 16 HRV features per lead, plus age/sex, fed into one-vs-rest random forest classifiers (750 estimators, max depth 70) with mRMR + floating recursive feature addition selection; (2) a deep learning (DL) model \u2014 8 CNN cells (Conv1d-BatchNorm-ReLU-Conv1d-BatchNorm-ReLU-MaxPool-Dropout) with shortcut/residual connections every 2 cells, followed by a GRU layer and a multi-head fully-connected output (binary SNR-vs-rest head plus a 23-class multi-head).",
+      "key_novelty": "Directly compares a classical digital-biomarker feature-engineering approach (HRV + morphological features feeding a random forest) against a deep CNN-GRU representation-learning approach, then stacks both via a logistic-regression ensemble to combine their complementary strengths."
+    },
+    "input": {
+      "leads_used": "12",
+      "signal_length_window": "Variable-length recordings; DL model inputs zero-padded to a fixed 40,000 samples (80 s at 500 Hz); FE approach used a representative ECG cycle per lead for waveform delineation",
+      "sampling_rate": "Resampled to 500 Hz (native rates varied: 257/500/1000/2000 Hz across source databases)",
+      "preprocessing": "Electrode-switch detection and polarity correction; signal-quality screening via bSQI index (examples with bSQI < 0.8 discarded, ~3213 excluded); Butterworth band-pass filter (0.13-88 Hz); two notch filters at 50 Hz and 60 Hz for power-line interference"
+    },
+    "data": {
+      "training_datasets": "All 6 official challenge training databases (CPSC, CPSC-2, Georgia, PTB, PTB-XL, INCART) plus two external open-access datasets: Chapman University/Shaoxing People's Hospital (\"CUSPH\", 10646 examples) and Chapman University/Ningbo First Hospital (\"CUNFH\", 334 examples, mostly PVC); total n=53730 examples after quality/label exclusions",
+      "class_imbalance_handling": "Minority classes proportionally over-weighted in the one-vs-rest random forest classifiers; reduced problem to 24 multilabel classes by merging 3 pairs the challenge treats as equivalent (CRBBB/RBBB, PVC/VPB, PAC/SVPB)",
+      "augmentation_techniques": "not reported (class imbalance addressed via external real-world databases and class re-weighting rather than synthetic augmentation)"
+    },
+    "training": {
+      "loss_function": "Random forest: not applicable (Gini-based splits); Deep learning: weighted combination of BCEWithLogitsLoss and F-beta score loss, with the loss weighting treated as a tunable hyperparameter",
+      "optimizer": "Adam (deep learning model)",
+      "cross_validation_strategy": "Stratified 5-fold cross-validation for hyperparameter tuning of both the FE (random forest) and DL models; final evaluation on an 80%/20% stratified train-test split",
+      "hardware": "not reported"
+    },
+    "contribution": {
+      "summary": "Shows that engineered digital biomarkers (HRV + 113 morphological features per lead) fed into a random forest outperform an end-to-end CNN-GRU deep learning model on this task, and that stacking both in an ensemble yields the best overall local score.",
+      "code_available": "not reported",
+      "code_url": "not reported"
+    },
+    "entry_type": "team_entry"
+  },
+  {
+    "paper_id": "CinC2020-217",
+    "team_name": "Whitaker's Lab",
+    "authors_affiliation": "Garrett Perkins, Chase McGlinn, Bradley M. Whitaker \u2014 Montana State University, Bozeman, MT, USA; Muhammad Rizwan \u2014 University of Management and Technology, Lahore, Pakistan",
+    "result": {
+      "official_challenge_metric_score": "not reported",
+      "official_rank": "not reported",
+      "evaluation_split": "Internal 3-way split of the original (pre-update) Challenge training data only: 25% to train feature-extraction models (PCA, sparse coding), 50% to train the random-forest classifier, 25% held out for validation; authors state 'we were unable to rank and score in the test set' and were unable to train on the full/updated Challenge dataset",
+      "self_reported_metrics": {
+        "f1": 0.002,
+        "auroc": 0.511,
+        "sensitivity": "not reported",
+        "specificity": "not reported",
+        "accuracy": "not reported",
+        "other": "Table 1 (Training / Validation, on internal holdout splits, not the official hidden test set): AUROC 0.476/0.511, AUPRC 0.134/0.054, Accuracy 0.238/'219' (as printed \u2014 likely a decimal typo in the source table, so left out of the 'accuracy' field above), F-measure 0.078/0.002, F-beta 0.108/0.002, G-beta 0.044/0.001, unofficial Challenge score 0.216/-0.744. Authors explicitly caution these validation numbers are 'likely to be over-optimistic.'"
+      }
+    },
+    "model": {
+      "architecture_family": "Ensemble",
+      "architecture_details": "Random forest classifier (8 estimators, max depth 2, Gini criterion, hyperparameters chosen via cross-validated grid/random search) applied to a 1220-length feature vector per 12-lead ECG: 20 PCA-reduced statistical features (mean, median, std, variance, skewness, kurtosis of R-peaks and RR-intervals, 12 stats x 12 leads reduced from 144 to 20 via PCA) concatenated with 1200 sparse-coding features (100 per lead from a shared dictionary of size 100, sparsity parameter 5, of which only ~60 are nonzero) derived from the magnitude spectrum of an 8192-point FFT of each lead.",
+      "key_novelty": "Applies sparse coding to the frequency-domain (FFT) representation of each ECG lead as an unsupervised feature-extraction step, and introduces a three-way (25%/50%/25%) data split that separates the data used to train unsupervised feature extractors, the supervised classifier, and validation, to reduce overfitting risk from reusing data across both learning stages."
+    },
+    "input": {
+      "leads_used": "12",
+      "signal_length_window": "Variable-length recordings for R-peak/RR-interval statistics; frequency-domain features derived from an 8192-point FFT (~30 s), with longer signals truncated and shorter signals zero-padded",
+      "sampling_rate": "not reported (native per-database Challenge sampling rates used; FFT frequency axis referenced up to 300 Hz for the 4096-sample half-spectrum)",
+      "preprocessing": "Not-a-Number (NaN) values replaced with zeros; R-peak detection and RR-interval computation per lead; statistical feature standardization prior to PCA; magnitude-spectrum FFT computation per lead prior to sparse coding"
+    },
+    "data": {
+      "training_datasets": "Official Challenge training data only (originally posted version for the reported results); no external datasets used; the entire unused portion of the CPSC2018 subset was placed in the holdout validation set specifically to test generalization across clinical sites; authors note they were unable to train on the full/updated Challenge dataset",
+      "class_imbalance_handling": "not reported",
+      "augmentation_techniques": "not reported"
+    },
+    "training": {
+      "loss_function": "not reported (random forest uses Gini impurity as the split criterion, not a trained loss function)",
+      "optimizer": "not reported (not a gradient-based model)",
+      "cross_validation_strategy": "Cross-validated grid/random search used to select random forest hyperparameters; a disjoint three-way data split (25% feature-extraction training / 50% classifier training / 25% holdout validation) used instead of standard k-fold CV, with the unused CPSC2018 data reserved entirely for the holdout set",
+      "hardware": "not reported"
+    },
+    "contribution": {
+      "summary": "Proposes sparse coding over FFT-derived frequency features as an ECG feature-extraction technique and a three-way data-splitting scheme (separating feature-extraction, classifier training, and validation data) to reduce overfitting, though the team was unable to submit a working entry to the official hidden test set.",
+      "code_available": "not reported",
+      "code_url": "not reported"
+    },
+    "entry_type": "team_entry"
+  },
+  {
+    "paper_id": "CinC2020-285",
+    "team_name": "ECGMaster",
+    "authors_affiliation": "Yang Liu, Kuanquan Wang, Yongfeng Yuan, Qince Li, Yacong Li, Yongpeng Xu, Henggui Zhang; Harbin Institute of Technology (HIT), Peng Cheng Laboratory, Yongjia County Public Security Bureau, University of Manchester, Southwest Medical University",
+    "result": {
+      "official_challenge_metric_score": "not reported",
+      "official_rank": "not reported",
+      "evaluation_split": "5-fold cross validation on the official training data only; paper explicitly states the team was unable to score/rank on the official hidden test set and that these training-set results may be over-optimistic",
+      "self_reported_metrics": {
+        "f1": "not reported",
+        "auroc": 0.9486,
+        "sensitivity": "not reported",
+        "specificity": "not reported",
+        "accuracy": "not reported",
+        "other": "5-fold CV averages: AUPRC 0.5615, F2 0.5765, G2 0.3240, challenge metric 0.5501 +/- 0.0223"
+      }
+    },
+    "model": {
+      "architecture_family": "Hybrid",
+      "architecture_details": "Residual CNN (9 residual blocks, each with 2 convolutional layers plus batch norm/dropout/ReLU, filter count increasing and kernel size halving every 3 blocks, down-sampled by max-pooling) feeding into a class-wise attention module based on Transformer-style scaled dot-product attention (one-hot class encodings as queries, linearly transformed local features as keys, local features as values), followed by per-class fully-connected sigmoid output layers.",
+      "key_novelty": "A class-wise attention mechanism that generates a separate attended feature vector per class (using class identities as attention queries) to reduce inter-class conflict in multi-label ECG classification, combined with a novel weighted focal loss for class imbalance."
+    },
+    "input": {
+      "leads_used": "12",
+      "signal_length_window": "60 seconds fixed length via random truncation or zero-padding",
+      "sampling_rate": "250 Hz (resampled from original)",
+      "preprocessing": "Amplitude scaled to a common resolution (1000/mV), resampled to 250 Hz, moving-average filter (window 250) for baseline wander removal, 3-level 'db4' wavelet transform with soft-thresholding for denoising, truncation/zero-padding to 60 seconds"
+    },
+    "data": {
+      "training_datasets": "PhysioNet/Computing in Cardiology Challenge 2020 official public training set (43101 ECG recordings from six databases across 4 institutions, 111 label types, 24 scored classes used); no external data reported",
+      "class_imbalance_handling": "Novel weighted focal loss with class-frequency-dependent alpha weighting terms (alpha_i,0 and alpha_i,1 based on N/(N-Ni) and N/Ni raised to tunable power b, set to b=0.5)",
+      "augmentation_techniques": "not reported (only random truncation/padding position noted, not framed as augmentation)"
+    },
+    "training": {
+      "loss_function": "Weighted focal loss (class-frequency-weighted extension of focal loss)",
+      "optimizer": "not reported",
+      "cross_validation_strategy": "5-fold cross validation on the training dataset",
+      "hardware": "Workstation with one CPU at 3.5 GHz, NVIDIA Quadro K6000 GPU, 64 GB memory; implemented in Keras"
+    },
+    "contribution": {
+      "summary": "Proposes a residual CNN combined with a Transformer-inspired class-wise attention mechanism (using class identities as attention queries) plus a weighted focal loss, to address multi-label conflicts and class imbalance in 12-lead ECG classification.",
+      "code_available": "not reported",
+      "code_url": "not reported"
+    },
+    "entry_type": "team_entry"
+  },
+  {
+    "paper_id": "CinC2020-305",
+    "team_name": "ELBIT",
+    "authors_affiliation": "\u00c1lvaro Huerta, Arturo Martinez-Rodrigo, Ra\u00fal Alcaraz (University of Castilla-La Mancha, Cuenca, Spain); Jos\u00e9 J Rieta (BioMIT.org, Universitat Polit\u00e8cnica de Valencia, Spain)",
+    "result": {
+      "official_challenge_metric_score": "not reported",
+      "official_rank": "not reported",
+      "evaluation_split": "official hidden test set from the first phase of the Challenge only (team states it was unable to participate in the final phase); metrics reported are the phase-1 class-weighted F-score (F\u03b2) and generalized Jaccard measure (G\u03b2), not the final official weighted-accuracy challenge metric",
+      "self_reported_metrics": {
+        "f1": "not reported",
+        "auroc": "not reported",
+        "sensitivity": "not reported",
+        "specificity": "not reported",
+        "accuracy": "not reported",
+        "other": "Class-weighted F-score (F\u03b2) = 0.933 and generalized Jaccard measure (G\u03b2) = 0.811 on an unofficial validation of 3,000 randomly selected training-subset signals; F\u03b2 = 0.654 and G\u03b2 = 0.372 on the official phase-1 hidden test set. Team did not participate in the Challenge's final phase."
+      }
+    },
+    "model": {
+      "architecture_family": "CNN",
+      "architecture_details": "8-layer CNN trained from scratch on 2-D continuous-Wavelet-transform scalogram images (200\u00d71000\u00d73 input) generated per heartbeat; architecture includes a 7\u00d77 convolution layer, a normalization layer, ReLU activation, a pooling layer, a fully-connected layer (9 output neurons), and a softmax output; per-beat class probabilities are averaged across all beats in a recording to assign a primary diagnosis (and secondary diagnoses for classes averaging >10% probability).",
+      "key_novelty": "Segments every beat in the 12-lead ECG, concatenates the same beat across all 12 leads into one signal, then converts it into a 2-D time-frequency image (scalogram) via continuous Wavelet transform (Morlet mother wavelet, 48 voices/octave) before CNN classification, enabling beat-to-beat primary and secondary diagnosis."
+    },
+    "input": {
+      "leads_used": "12",
+      "signal_length_window": "Per-beat window centered on each detected R-peak, concatenated sequentially across all 12 leads to form one signal per beat",
+      "sampling_rate": "Varies by source database (500 Hz for CPSC/PTB-XL/Georgia data, 257 Hz for St Petersburg INCART, 1 kHz for PTB); not resampled to a common rate as reported",
+      "preprocessing": "Pan & Tompkins algorithm applied to raw lead I to detect R-peaks and compute mean RR interval, defining a time window per beat; window applied to remaining leads and beats concatenated across leads; resulting signal transformed into a 2-D wavelet scalogram via continuous Wavelet transform (CWT) with a Morlet mother wavelet and 48 voices per octave"
+    },
+    "data": {
+      "training_datasets": "All official 2020 Challenge training databases (CPSC 2018, St Petersburg INCART, PTB, PTB-XL, Georgia); 130,627 individual beats randomly extracted for training, covering 9 classes (only 9 of the 27 scored diagnoses were present in the initial-phase training data used)",
+      "class_imbalance_handling": "not reported (Table 1 shows an uneven number of beats per class, ranging from 3,190 to 27,856, but no specific balancing technique is described)",
+      "augmentation_techniques": "not reported"
+    },
+    "training": {
+      "loss_function": "not reported",
+      "optimizer": "Stochastic gradient descent with momentum 0.9, learning rate 0.001, mini-batches of 100 samples, trained for 20 epochs",
+      "cross_validation_strategy": "not reported (unofficial validation performed on 3,000 randomly selected training-subset signals rather than a formal CV scheme)",
+      "hardware": "not reported"
+    },
+    "contribution": {
+      "summary": "Proposes a beat-to-beat ECG classification pipeline that segments and concatenates single heartbeats across all 12 leads, converts each into a wavelet scalogram image, and classifies it with a CNN, averaging beat-level probabilities to detect both primary and secondary abnormalities \u2014 though performance dropped substantially from the training-subset validation to the official hidden test set.",
+      "code_available": "not reported",
+      "code_url": "not reported"
+    },
+    "entry_type": "team_entry"
+  },
+  {
+    "paper_id": "CinC2020-307",
+    "team_name": "SBU_AI",
+    "authors_affiliation": "Ibrahim Hammoud, IV Ramakrishnan, Petar M. Djuri\u0107 (Stony Brook University, Stony Brook, US)",
+    "result": {
+      "official_challenge_metric_score": 0.024,
+      "official_rank": "not reported (submission was not officially ranked due to omissions in the submission)",
+      "evaluation_split": "official hidden full test set (score 0.024); paper also separately reports an internal 'challenge validation score' of 0.416 and a per-database breakdown of the full test set",
+      "self_reported_metrics": {
+        "f1": "not reported",
+        "auroc": "not reported",
+        "sensitivity": "not reported",
+        "specificity": "not reported",
+        "accuracy": "not reported",
+        "other": "Internal validation score (challenge metric) = 0.416. Per-database full test set challenge scores (Table 4): database 1 = 0.513, database 2 = 0.016, and a row labeled 'database 2' again = -0.028 (likely a typo for a third database in the original table)."
+      }
+    },
+    "model": {
+      "architecture_family": "RNN/LSTM",
+      "architecture_details": "Per-heartbeat feature vectors (discrete-time Fourier transform energy over 0-10Hz, inter-beat interval duration, plus static features: heart rate, IBI mean/std of differences, age, sex, signal gain) are projected via an embedding matrix and fed into a bidirectional LSTM (hidden dimension 256, input embedding dimension 512). The bidirectional LSTM outputs form attention vectors over the heartbeat embeddings; the resulting attention output feeds a final feed-forward layer with a sigmoid activation to produce multi-label probabilities across 24 classes.",
+      "key_novelty": "Combines intra-heartbeat frequency-domain features (via discrete-time Fourier transform per beat) with an inter-heartbeat attention mechanism built on a bidirectional LSTM, allowing the model to weigh individual heartbeats' contribution to each diagnostic label."
+    },
+    "input": {
+      "leads_used": "12 (all 12 leads used by a custom heuristic to select the best-quality lead for R-peak/heart-rate detection)",
+      "signal_length_window": "10-second window extracted from the middle of each recording, with up to a maximum of 10 heartbeats processed per recording",
+      "sampling_rate": "not reported",
+      "preprocessing": "All challenge datasets merged into one 43,101-recording set; 10s window taken from the signal middle; custom peak-detection pipeline selects the lead with the most prominent peaks via a gradient-ratio heuristic, estimates approximate heart rate via autocorrelation of the lead's derivative, then detects R-peaks using adaptive minimum-distance and prominence thresholds tuned to >99% accuracy on 50 sampled signals; per-heartbeat DTFT and static patient/signal features are then extracted"
+    },
+    "data": {
+      "training_datasets": "All official Challenge 2020 training datasets merged into one combined dataset (43,101 12-lead ECGs total); no external data reported",
+      "class_imbalance_handling": "not reported",
+      "augmentation_techniques": "not reported"
+    },
+    "training": {
+      "loss_function": "Binary cross-entropy, averaged over all 24 class outputs",
+      "optimizer": "not reported (the specific gradient optimizer algorithm is not named); learning rate, gradient clip norm, L1/L2 regularization coefficients, and dropout rate were tuned via Bayesian optimization using Hyperopt over 40 trials",
+      "cross_validation_strategy": "Training data split 70%/30% into training and validation sets for hyperparameter tuning (40 Hyperopt trials); best-performing configuration then retrained on the full dataset before submission; classification thresholds per class tuned separately via 200 Bayesian-optimization trials on the training set",
+      "hardware": "not reported"
+    },
+    "contribution": {
+      "summary": "Proposes representing each ECG as a sequence of per-heartbeat frequency-domain (DTFT) embeddings processed by a bidirectional LSTM with an inter-heartbeat attention mechanism, so the network learns which heartbeats matter most for each label; the submitted model generalized poorly to the hidden test set (score 0.024) and was not officially ranked due to submission omissions.",
+      "code_available": "not reported",
+      "code_url": "not reported"
+    },
+    "entry_type": "team_entry"
+  },
+  {
+    "paper_id": "CinC2020-349",
+    "team_name": "CardioUniBo",
+    "authors_affiliation": "Davide Borra, Alice Andal\u00f2, Stefano Severi, Cristiana Corsi; DEI, Campus of Cesena, University of Bologna, Italy",
+    "result": {
+      "official_challenge_metric_score": "not reported",
+      "official_rank": "not reported",
+      "evaluation_split": "5-fold stratified cross-validation on the official Challenge training data (team was unable to obtain scores on the official hidden test set during the official phase of the challenge, as explicitly stated in the paper)",
+      "self_reported_metrics": {
+        "f1": "not reported",
+        "auroc": 0.9391,
+        "sensitivity": "not reported",
+        "specificity": "not reported",
+        "accuracy": "not reported",
+        "other": "Training 5-fold CV challenge metric (mean\u00b1std) and AUROC (mean\u00b1std) per architecture: InceptionTime 0.5183\u00b10.0016 / AUROC 0.9391\u00b10.0017 (best challenge-metric score, reported as best compromise between performance and complexity); ResNet 0.5091\u00b10.0071 / AUROC 0.9400\u00b10.0015 (best AUROC); XResNet1d-18 0.5127\u00b10.0051 / 0.9335\u00b10.0031; XResNet1d-34 0.5085\u00b10.0051 / 0.9307\u00b10.0026; XResNet1d-50 0.5180\u00b10.0042 / 0.9352\u00b10.0037; XResNet1d-101 0.5140\u00b10.0047 / 0.9334\u00b10.0022."
+      }
+    },
+    "model": {
+      "architecture_family": "CNN",
+      "architecture_details": "Benchmarks three state-of-the-art 1D CNN designs for time-series classification: InceptionTime (6 inception blocks, kernel sizes 40/20/10), ResNet (Wang et al. 1D CNN baseline, kernel size 5), and XResNet1d with 18/34/50/101 layers (kernel size 5). All share a common head: concat-pooling (concatenation of global average and max pooling) on top of the convolutional module, followed by FC-128 + batch norm + ReLU + dropout (p=0.5), then FC-27 output layer with sigmoid activation. Trainable parameter counts: 510491 (InceptionTime), 476187 (ResNet), 697499/1356955/1808795/3645339 (XResNet1d-18/34/50/101).",
+      "key_novelty": "Systematically benchmarks InceptionTime, ResNet, and XResNet time-series CNN architectures with a shared decoding head on the 2020 Challenge's multicenter 12-lead ECG data, showing InceptionTime gives the best performance-to-parameter-count trade-off."
+    },
+    "input": {
+      "leads_used": "12",
+      "signal_length_window": "Non-overlapping 2.5s chunks per recording (CNN input shape 12x250 at 100Hz); chunk-level probabilities averaged to obtain recording-level probabilities",
+      "sampling_rate": "Downsampled to 100 Hz",
+      "preprocessing": "Gain factor correction per lead; zero-phase 2nd-order band-pass Butterworth filter (0.5-40 Hz); downsampling to 100 Hz; per-lead standardization (z-score)."
+    },
+    "data": {
+      "training_datasets": "Subset of the official Challenge 2020 training data: CPSC + CPSC-Extra (6877+3453 examples), PTB-XL (21837 examples), and Georgia (10344 examples), merged into a 42511-example multicenter dataset; other official datasets excluded for not having comparable recording lengths. No external (non-Challenge) data used.",
+      "class_imbalance_handling": "not reported (beyond use of stratified 5-fold cross-validation splits)",
+      "augmentation_techniques": "Offline augmentation via non-overlapping 2.5s chunking of each 12-lead recording; online augmentation by randomly zeroing each lead signal with probability 0.5 during training, to improve robustness to recordings with zeroed-out leads."
+    },
+    "training": {
+      "loss_function": "Cross-entropy",
+      "optimizer": "Adam, learning rate 1e-3, batch size 32",
+      "cross_validation_strategy": "5-fold stratified cross-validation on the merged training dataset; trained up to 100 epochs with early stopping based on validation loss (20% of training set held out as validation)",
+      "hardware": "NVIDIA Titan V GPU; PyTorch framework"
+    },
+    "contribution": {
+      "summary": "Benchmarks three state-of-the-art 1D CNN time-series architectures (InceptionTime, ResNet, XResNet) with a common classification head on multicenter 12-lead ECG data from the 2020 Challenge, finding InceptionTime offers the best trade-off between cross-validated performance and parameter count.",
+      "code_available": "not reported",
+      "code_url": "not reported"
+    },
+    "entry_type": "team_entry"
+  },
+  {
+    "paper_id": "CinC2020-353",
+    "team_name": "LaussenLabs",
+    "authors_affiliation": "Sebastian D Goodfellow et al., Department of Critical Care Medicine, The Hospital for Sick Children / University of Toronto, Canada",
+    "result": {
+      "official_challenge_metric_score": -0.406,
+      "official_rank": "not reported",
+      "evaluation_split": "Official hidden test set: submission failed to run within the competition time limit, so the recorded score of -0.406 is a default/error score (equivalent to predicting all negatives), not a true measure of model performance. Model's genuine performance is reflected instead in the 6-fold cross-validation on the full training data (CV mean 0.630, min 0.614, max 0.644).",
+      "self_reported_metrics": {
+        "f1": "not reported",
+        "auroc": "not reported",
+        "sensitivity": "not reported",
+        "specificity": "not reported",
+        "accuracy": "not reported",
+        "other": "6-fold cross-validation challenge metric: mean 0.630, min 0.614, max 0.644, stdev 0.010"
+      }
+    },
+    "model": {
+      "architecture_family": "CNN",
+      "architecture_details": "15-channel input (12 ECG leads + 3 engineered r-peak/p-wave/t-wave likelihood feature channels). A stem of two 1D conv+batchnorm+ReLU+max-pool+dropout blocks downsamples the 19,000-sample input to 4,750 samples. This feeds a series of 8 non-causal WaveNet-style dilated residual blocks (dilation rates 1 to 256) with gated tanh/sigmoid activations and summed skip connections. Output conv layers (same structure as the stem) globally average-pool in time and feed a 27-unit dense layer with sigmoid activation, whose output is squared before thresholding. An auxiliary decoder branch (two upsampling deconvolution layers) reconstructs the original 19000x15 input as a secondary training objective.",
+      "key_novelty": "Combines engineered ECG fiducial-point (r-peak/p-wave/t-wave) features as extra input channels with a modified non-causal WaveNet residual architecture, an auxiliary signal-reconstruction decoder, a squared-sigmoid output tuned to the competition's false-negative-sensitive metric, and post-hoc class-activation-map inspection to surface likely mislabeled training data."
+    },
+    "input": {
+      "leads_used": "12",
+      "signal_length_window": "19s fixed window (19,000 samples at 1000Hz), zero-padded if shorter, clipped after 19s if longer",
+      "sampling_rate": "1000 Hz (upsampled from original recordings sampled at 257, 500, or 1000 Hz)",
+      "preprocessing": "Resampled to 1000Hz via SciPy resample; amplitude scaled by median R-peak amplitude on Lead I (via BioSPPy) when reliable r-peak detection was possible, otherwise per-lead median subtraction and division by the standard deviation across all 12 leads; 3 engineered feature channels (r-peak, p-wave, t-wave likelihood via kernel density estimation) appended as additional input channels"
+    },
+    "data": {
+      "training_datasets": "All official Challenge training data, no external data; used for 6-fold cross-validation",
+      "class_imbalance_handling": "Sigmoid output squared to increase penalty on false negatives relative to false positives, aligned with the competition metric's sensitivity; no explicit class-reweighting scheme reported",
+      "augmentation_techniques": "Synthetic noise added during training: Gaussian noise, high-frequency/low-amplitude oscillations, baseline wandering, and large-amplitude transient pulses; random amplitude scaling factor; random heart-rate perturbation with resampling (applied only when the label was not heart-rate dependent)"
+    },
+    "training": {
+      "loss_function": "Sum of binary cross-entropy (classifier output) and mean squared error (decoder reconstruction output)",
+      "optimizer": "Adam, initial learning rate 1e-3, batch size 128, with ReduceLROnPlateau decay schedule (patience 1)",
+      "cross_validation_strategy": "6-fold cross-validation using the iterative-stratification package for multilabel stratified splitting; trained up to 100 epochs with early stopping (patience 10); inference used majority vote across the 6 fold models",
+      "hardware": "not reported"
+    },
+    "contribution": {
+      "summary": "Combines raw 12-lead ECG with engineered r-peak/p-wave/t-wave likelihood features in a modified non-causal WaveNet residual network with an auxiliary reconstruction decoder, using class-activation maps to flag likely mislabeled training data; achieved a CV score of 0.63 but could not complete a valid test-set submission before the deadline.",
+      "code_available": true,
+      "code_url": "github.com/Seb-Good/physionet-challenge-2020"
+    },
+    "entry_type": "team_entry"
+  },
+  {
+    "paper_id": "CinC2020-435",
+    "team_name": "Germinating",
+    "authors_affiliation": "Guadalupe Garc\u00eda-Isla, Rita Laureanti, Valentina D. Corino, Luca T. Mainardi; Politecnico di Milano, Milan, Italy",
+    "result": {
+      "official_challenge_metric_score": "not reported",
+      "official_rank": "not reported",
+      "evaluation_split": "10-fold cross-validation on provided training data only (phase 1 evaluated on CPSC2018 subset with 9 categories; phase 2 evaluated on all six databases with 24 categories) \u2014 no official hidden test set score or leaderboard rank is stated in the paper",
+      "self_reported_metrics": {
+        "f1": 0.116,
+        "auroc": 0.541,
+        "sensitivity": "not reported",
+        "specificity": "not reported",
+        "accuracy": 0.148,
+        "other": "Phase 1 (9 categories, CPSC2018 only, 10-fold CV): accuracy 94.4%\u00b10.4, Challenge metric (geometric mean of F\u03b2 and G\u03b2) 0.644\u00b10.031, AUROC 0.099\u00b10.009, AUPRC 0.019\u00b10.002, F 0.727\u00b10.019, F\u03b2 0.763\u00b10.019, G\u03b2 0.525\u00b10.025. Phase 2 (24 categories, all 6 databases, 10-fold CV): Challenge metric 0.030\u00b10.009, AUPRC 0.083\u00b10.001, F 0.116\u00b10.004, F\u03b2 0.144\u00b10.004, G\u03b2 0.062\u00b10.002, Accuracy 0.148\u00b10.009. Per-rhythm sensitivity/specificity values are given in Tables 1 (phase 1) and 2 (phase 2), e.g. phase 2 AF: Se 94.55%\u00b11.19, Sp 93.97%\u00b10.56."
+      }
+    },
+    "model": {
+      "architecture_family": "Ensemble",
+      "architecture_details": "Ensemble of classical machine-learning classifiers, each dedicated to a specific region of the cardiac conduction system: phase 1 used 4 classifiers (2 support vector machines for permanent conditions grouped by ECG region, plus 2 bagged-tree classifiers for the sporadic PAC/PVC events); phase 2 used 7 boosted-tree classifiers split by cardiac region (atrial tissue; sinoatrial node; AV node; bundle branches; ventricular tissue; plus dedicated PAC and PVC classifiers). Inputs are hand-crafted features: cross-correlation distances between intra-patient and rhythm-specific inter-patient morphological templates computed over defined ECG windows (P-wave, QRS complex, PQ-ST segment, T-wave, PR, RT), heart-rate-variability features (RR mean/SD, successive-difference SD, pNN50, RMSSD), Global Electric Heterogeneity (GEH) vectorcardiographic features, plus age and sex.",
+      "key_novelty": "A physiologically-motivated feature-engineering approach: builds intra-patient and rhythm-specific inter-patient morphological templates for distinct ECG segments/cardiac regions and feeds the cross-correlation distances between them (plus HRV and GEH features) into region-specific classifiers, rather than an end-to-end deep network."
+    },
+    "input": {
+      "leads_used": "12",
+      "signal_length_window": "Signals ranged from 6s to 60s (arrhythmias assumed present over the whole signal); fixed sub-windows anchored on the R-peak were extracted per segment of interest: P-wave (-300 to -40 ms), QRS-complex (-70 to +60 ms), PQ-ST (-150 to +250 ms, excluding -55 to +55 ms), T-wave (+100 to +350 ms), PR (-288 ms to R), RT (R to +258 ms)",
+      "sampling_rate": "not reported",
+      "preprocessing": "Baseline removed via two median filters subtracted from the original signal; powerline/high-frequency noise removed with an equal-ripple FIR low-pass filter (3-dB point at 35 Hz); R-peaks detected via Pan-Tompkins algorithm on 5 positive-QRS leads (I, II, III, aVF, V4, V5, V6), combined into an impulse train, Gaussian-smoothed, cross-correlation aligned (V5 as reference), median-combined across leads, then Pan-Tompkins re-applied to the resulting signal"
+    },
+    "data": {
+      "training_datasets": "All six official Challenge 2020 databases (CPSC2018, St Petersburg INCART, PTB Diagnostic ECG Database, PTB-XL, Georgia 12-Lead ECG Challenge Database) \u2014 43,101 labeled 12-lead ECGs; phase 1 evaluation restricted to the CPSC2018 subset only",
+      "class_imbalance_handling": "not reported",
+      "augmentation_techniques": "not reported"
+    },
+    "training": {
+      "loss_function": "Not applicable \u2014 classifiers are support vector machines (phase 1) and bagged/boosted decision trees (phases 1-2), which are not trained via gradient-based loss minimization in the deep-learning sense",
+      "optimizer": "Not applicable \u2014 SVM and tree-based (bagged/boosted) classifiers",
+      "cross_validation_strategy": "10-fold cross-validation, implemented in Matlab 2020a, for both phase 1 and phase 2 classifiers",
+      "hardware": "not reported"
+    },
+    "contribution": {
+      "summary": "Proposes a physiologically-interpretable ECG classifier that builds intra-patient and rhythm-specific inter-patient morphological templates per cardiac conduction region and feeds cross-correlation distances plus HRV/GEH features into an ensemble of region-specific SVM/tree classifiers, rather than using an end-to-end deep network.",
+      "code_available": "not reported",
+      "code_url": "not reported"
+    },
+    "entry_type": "team_entry"
+  },
+  {
+    "paper_id": "CinC2020-456",
+    "team_name": "UIDT-UNAM",
+    "authors_affiliation": "Jonathan R Torres, K De Los R\u00edos, Miguel A Padilla; Institute of Applied Sciences and Technology / Institute of Physics, Universidad Nacional Aut\u00f3noma de M\u00e9xico (UNAM), Mexico",
+    "result": {
+      "official_challenge_metric_score": "not reported",
+      "official_rank": "not reported",
+      "evaluation_split": "10-fold cross-validation on public training data only (local training/validation/local-testing split of 70%/15%/15%); authors state they had not yet been scored on the official hidden test set",
+      "self_reported_metrics": {
+        "f1": 0.825,
+        "auroc": "not reported",
+        "sensitivity": "not reported",
+        "specificity": 0.9157,
+        "accuracy": "not reported",
+        "other": "Unofficial (self-computed) S-score of 0.766 (76.60%) on local test split; average loss of 0.0617"
+      }
+    },
+    "model": {
+      "architecture_family": "CNN",
+      "architecture_details": "Two parallel VGG-16-based convolutional branches trained from scratch: one branch takes 64x64 grayscale raw-signal time-series images, the other takes 64x64 grayscale time-frequency representation (TFR) images obtained via Wavelet Synchrosqueezing (WS). Each branch has 5 convolutional/max-pooling stages (3x3 kernels, 2x2 pooling), feeding into a 3-layer fully-connected head (4096-feature first FC layer) ending in a 27-channel sigmoid output layer.",
+      "key_novelty": "Dual-branch (parallel) CNN that fuses raw ECG waveform images with wavelet-synchrosqueezing time-frequency images, feeding both representations into a shared VGG-16-derived architecture to capture complementary morphology and instantaneous-frequency features."
+    },
+    "input": {
+      "leads_used": "12",
+      "signal_length_window": "1.2 s segments taken from the first 6 s of each recording; 120 images generated per patient",
+      "sampling_rate": "not reported",
+      "preprocessing": "Wavelet transform (Daubechies db4) denoising, segmentation into 1.2 s windows, conversion into two 64x64 grayscale image sets: (1) plotted raw time-series and (2) time-frequency representation via Wavelet Synchrosqueezing (based on continuous wavelet transform)"
+    },
+    "data": {
+      "training_datasets": "Six official public Challenge datasets (four sources) covering 111 identified arrhythmia labels, reduced to 27 assessed classes; over 37,134 12-lead ECG records processed into ~4,456,080 beat images; no external (non-Challenge) data used",
+      "class_imbalance_handling": "not reported",
+      "augmentation_techniques": "not reported"
+    },
+    "training": {
+      "loss_function": "not reported",
+      "optimizer": "not reported",
+      "cross_validation_strategy": "10-fold cross-validation; batch size and learning rate hyperparameters swept (batch sizes 64-1024, lr=0.001, 50 epochs), best batch size found to be 512",
+      "hardware": "Miztli-UNAM Supercomputer"
+    },
+    "contribution": {
+      "summary": "Proposes a parallel dual-input CNN based on VGG-16 that combines raw ECG waveform images with wavelet-synchrosqueezing time-frequency images to classify 27 cardiac arrhythmia types from 12-lead ECGs, reporting only cross-validated results on the public training data.",
+      "code_available": "not reported",
+      "code_url": "not reported"
+    },
+    "entry_type": "team_entry"
+  },
+  {
+    "paper_id": "CinC2020-462",
+    "team_name": "BitScattered",
+    "authors_affiliation": "Philip A. Warrick (PeriGen Inc., Montreal), Vincent Lostanlen (New York University), Michael Eickenberg (Flatiron Institute, New York), Joakim And\u00e9n (KTH Royal Institute of Technology), Masun Nabhan Homsi (Helmholtz Centre for Environmental Research, UFZ, Leipzig)",
+    "result": {
+      "official_challenge_metric_score": "not reported",
+      "official_rank": "not reported",
+      "evaluation_split": "10-fold cross-validation on combined CPSC2018 + PTB-XL training data (90%/10% train/test split per fold, with 10% of training used for validation); authors explicitly state they were unable to complete a working Docker submission and therefore could not obtain a score on the official hidden test set",
+      "self_reported_metrics": {
+        "f1": "not reported",
+        "auroc": "not reported",
+        "sensitivity": "not reported",
+        "specificity": "not reported",
+        "accuracy": "not reported",
+        "other": "Challenge metric (s_normalized, as defined in the Challenge overview paper) of 0.536 \u00b1 0.012 (mean \u00b1 SD test-fold score over 10-fold cross-validation); training fold mean 0.569 \u00b1 0.014, validation fold mean 0.540 \u00b1 0.016. Authors caution this may be over-optimistic since it is not the official hidden test set score."
+      }
+    },
+    "model": {
+      "architecture_family": "Hybrid",
+      "architecture_details": "Three-stage differentiable pipeline: (1) a non-trainable time scattering transform (ST) per ECG channel using Morlet wavelets (Q=1, J=11, center frequency 200 Hz), producing 75 scattering paths (12 first-order + 63 second-order) with an asinh compressive nonlinearity, implemented in Python via the Kymatio library; (2) a depthwise separable convolution (DSC) layer (N=P=66, ReLU activation) combining scattering coefficients across the 12 leads; (3) two stacked bidirectional LSTM (BiLSTM) layers (100 hidden units each) followed by a dense sigmoid output layer for multilabel classification of 24 target classes (27 arrhythmias with 3 equivalent-class pairs collapsed).",
+      "key_novelty": "First fully Python-based implementation (via the new Kymatio library) of a scattering transform combined with a depthwise separable convolution and BiLSTM network for ECG arrhythmia classification, avoiding the MATLAB/Python split used in prior scattering-transform work."
+    },
+    "input": {
+      "leads_used": "12",
+      "signal_length_window": "30 s learning-batch window (ST paths for longer sequences truncated at 30 s; padding target applied for recordings shorter than the batch size)",
+      "sampling_rate": "500 Hz (ECG acquisition rate); scattering transform discretized at a Nyquist rate of 8 Hz",
+      "preprocessing": "Analog-to-digital gain (ADG) from input headers applied to obtain physical (mV) units; channel-wise scattering transform with asinh compressive nonlinearity applied to scattering magnitudes"
+    },
+    "data": {
+      "training_datasets": "CPSC2018 (public CPSC training set + unused CPSC2 data) and PTB-XL, totaling 32,167 of the 43,101 available Challenge recordings (~75%); St. Petersburg and Georgia (G12EC) datasets were tried but training did not converge on them so they were excluded from cross-validation",
+      "class_imbalance_handling": "not reported",
+      "augmentation_techniques": "not reported"
+    },
+    "training": {
+      "loss_function": "Binary cross-entropy (multilabel)",
+      "optimizer": "Adam",
+      "cross_validation_strategy": "10-fold cross-validation; 90%/10% train/test split with 10% of the training set held out for validation and 20-epoch early stopping",
+      "hardware": "Machine with 32 GB system memory and two GPUs (12 GB memory each), using TensorFlow's MirroredStrategy to distribute training across the two GPUs; ~18 hours training time per fold"
+    },
+    "contribution": {
+      "summary": "Combines a fixed (non-trainable) scattering transform with a learned depthwise separable convolution and bidirectional LSTM, all implemented end-to-end in Python via the Kymatio library, to classify 27 arrhythmia classes from 12-lead ECGs, but the team was unable to score on the official hidden test set due to submission/Docker issues.",
+      "code_available": "not reported",
+      "code_url": "not reported"
+    },
+    "entry_type": "team_entry"
+  },
+  {
+    "paper_id": "2020ChallengePaper",
+    "team_name": "N/A \u2014 challenge overview paper",
+    "authors_affiliation": "Erick A. Perez Alday, Annie Gu, Amit Shah, Chad Robichaux, An-Kwok Ian Wong, Chengyu Liu, Feifei Liu, Ali Bahrami Rad, Andoni Elola, Salman Seyedi, Qiao Li, Ashish Sharma, Gari D. Clifford, Matthew A. Reyna; Emory University (Dept. of Biomedical Informatics, Dept. of Epidemiology, Dept. of Medicine), Georgia Institute of Technology, Southeast University (China), Shandong Jianzhu University (China), University of the Basque Country (Spain)",
+    "result": {
+      "official_challenge_metric_score": "not reported",
+      "official_rank": "not reported",
+      "evaluation_split": "not applicable \u2014 overview paper reports aggregate results across multiple splits (validation set, hidden CPSC set, hidden G12EC set, hidden undisclosed set, and official hidden test set) rather than a single team's evaluation split",
+      "self_reported_metrics": {
+        "f1": "not reported",
+        "auroc": "not reported",
+        "sensitivity": "not reported",
+        "specificity": "not reported",
+        "accuracy": "not reported",
+        "other": "Aggregate Challenge statistics (not a per-team metric): 217 teams submitted 1395 algorithms; 707 successful entries overall (397 unofficial phase, 310 official phase); 70 teams' codebases fully evaluated on the test set; 41 teams qualified for the final rankings. High-performing algorithms exhibited performance drops of up to ~10% on hidden test data relative to validation; on average, scores dropped 47% from the hidden CPSC set to the hidden G12EC set, a further 57% from the hidden G12EC set to the hidden undisclosed set, and about 50% on average from the validation set to the test set. Median training time across submissions was 6 hours 49 minutes; over 70% of entries used hand-crafted/clinical features with classifiers such as SVMs, gradient boosting, random forests, and shallow neural networks rather than deep learning/CNNs."
+      }
+    },
+    "model": {
+      "architecture_family": "not applicable \u2014 overview paper",
+      "architecture_details": "not applicable \u2014 overview paper",
+      "key_novelty": "not applicable \u2014 overview paper"
+    },
+    "input": {
+      "leads_used": "not applicable \u2014 overview paper",
+      "signal_length_window": "not applicable \u2014 overview paper",
+      "sampling_rate": "not applicable \u2014 overview paper",
+      "preprocessing": "not applicable \u2014 overview paper"
+    },
+    "data": {
+      "training_datasets": "not applicable \u2014 overview paper",
+      "class_imbalance_handling": "not applicable \u2014 overview paper",
+      "augmentation_techniques": "not applicable \u2014 overview paper"
+    },
+    "training": {
+      "loss_function": "not applicable \u2014 overview paper",
+      "optimizer": "not applicable \u2014 overview paper",
+      "cross_validation_strategy": "not applicable \u2014 overview paper",
+      "hardware": "not applicable \u2014 overview paper"
+    },
+    "contribution": {
+      "summary": "Defines the PhysioNet/Computing in Cardiology Challenge 2020 task: multi-label classification of 12-lead ECG recordings (66,361 recordings from six hospital systems in four countries; 43,101 posted publicly) into cardiac abnormalities drawn from 111 possible diagnoses, 27 of which were officially scored. Its central contribution is a novel evaluation metric \u2014 built from an expert (cardiologist)-defined reward matrix W that gives partial credit to misdiagnoses with similar clinical treatments/outcomes and full credit only to correct diagnoses \u2014 normalized so an always-correct classifier scores 1 and an always-inactive (all-normal) classifier scores 0, replacing plain accuracy/AUC as the ranking criterion. The Challenge also required, for the first time in a public competition of this kind, that teams submit open-source code for both training and running their models to ensure reproducibility.",
+      "code_available": true,
+      "code_url": "https://physionetchallenges.github.io/2020/ ; scoring/evaluation code and official results at https://github.com/physionetchallenges/evaluation-2020"
+    },
+    "entry_type": "challenge_overview"
+  },
+  {
+    "paper_id": "CinC2020-236",
+    "team_name": "N/A \u2014 challenge overview paper",
+    "authors_affiliation": "Matthew A. Reyna, Erick A. Perez Alday, Annie Gu, Chengyu Liu, Salman Seyedi, Ali Bahrami Rad, Andoni Elola, Qiao Li, Ashish Sharma, Gari D. Clifford; Dept. of Biomedical Informatics, Emory University, USA; School of Instrument Science and Engineering, Southeast University, China; Dept. of Communications Engineering, University of the Basque Country, Spain; Dept. of Biomedical Engineering, Georgia Institute of Technology, USA",
+    "result": {
+      "official_challenge_metric_score": "not reported",
+      "official_rank": "not reported",
+      "evaluation_split": "not applicable \u2014 overview paper reports aggregate challenge-wide statistics and the official top-10 leaderboard rather than a single team's evaluation",
+      "self_reported_metrics": {
+        "f1": "not reported",
+        "auroc": "not reported",
+        "sensitivity": "not reported",
+        "specificity": "not reported",
+        "accuracy": "not reported",
+        "other": "Aggregate Challenge statistics (not a per-team metric): 217 teams submitted 1395 algorithm attempts, of which 707 were successful; 41 teams qualified for official ranking. Algorithms performed roughly 10% worse on the hidden test data than on validation data on average. Official top-10 leaderboard (Table 2): 1. prna 0.533; 2. Between a ROC and a heart place 0.520; 3. HeartBeats 0.514; 4. Triage 0.485; 5. Sharif AI Team 0.437; 6. DSAIL SNU 0.420; 7. UMCUVA 0.417; 8. CQUPT ECG 0.411; 9. ECU 0.382; 10. PALab 0.359 (only the top 10 of 41 ranked teams are given in this paper, not the full 41-team table)."
+      }
+    },
+    "model": {
+      "architecture_family": "not applicable \u2014 overview paper",
+      "architecture_details": "not applicable \u2014 overview paper",
+      "key_novelty": "not applicable \u2014 overview paper"
+    },
+    "input": {
+      "leads_used": "not applicable \u2014 overview paper",
+      "signal_length_window": "not applicable \u2014 overview paper",
+      "sampling_rate": "not applicable \u2014 overview paper",
+      "preprocessing": "not applicable \u2014 overview paper"
+    },
+    "data": {
+      "training_datasets": "not applicable \u2014 overview paper",
+      "class_imbalance_handling": "not applicable \u2014 overview paper",
+      "augmentation_techniques": "not applicable \u2014 overview paper"
+    },
+    "training": {
+      "loss_function": "not applicable \u2014 overview paper",
+      "optimizer": "not applicable \u2014 overview paper",
+      "cross_validation_strategy": "not applicable \u2014 overview paper",
+      "hardware": "not applicable \u2014 overview paper"
+    },
+    "contribution": {
+      "summary": "This is the 4-page CinC2020 conference companion paper (DOI 10.22489/CinC.2020.236) to the PhysioNet/Computing in Cardiology Challenge 2020 overview, written by the challenge organizers rather than a competing team. It defines the task of multi-label classification of 12-lead ECG recordings into cardiac abnormalities (66,361 recordings sourced from five hospital systems in four countries; 43,101 shared publicly; 111 total diagnoses, 27 of which were officially scored) and introduces the Challenge's novel scoring metric: a cardiologist-defined reward matrix that gives partial credit to misdiagnoses with clinically similar treatments/outcomes, normalized so an always-correct classifier scores 1 and an always-inactive classifier scores 0. Reports that 217 teams submitted 1395 algorithms, 41 qualified for final ranking, and lists the official top-10 leaderboard.",
+      "code_available": true,
+      "code_url": "https://physionetchallenges.github.io/2020/ ; official results at https://github.com/physionetchallenges/evaluation-2020"
+    },
+    "entry_type": "challenge_overview"
+  },
+  {
+    "paper_id": "CinC2020-340",
+    "team_name": "not reported \u2014 NOTE: this paper is NOT an entry in the 2020 12-lead ECG classification challenge. It describes a system built on the PhysioNet/CinC 2018 Challenge dataset (apnoea/non-apnoea arousal detection from polysomnogram signals), merely published in the same CinC 2020 proceedings volume (DOI 10.22489/CinC.2020.340).",
+    "authors_affiliation": "Philip de Chazal, John Du, Nadi Sadr; Charles Perkins Centre and School of Biomedical Engineering, The University of Sydney, Australia",
+    "result": {
+      "official_challenge_metric_score": "not reported",
+      "official_rank": "not reported",
+      "evaluation_split": "10-fold cross-validation on the 2018 PhysioNet/CinC Challenge PSG dataset (994 overnight recordings); this is unrelated to the 2020 12-lead-ECG Challenge's official hidden test set / official weighted-accuracy metric.",
+      "self_reported_metrics": {
+        "f1": "not reported",
+        "auroc": 0.91,
+        "sensitivity": 0.85,
+        "specificity": 0.85,
+        "accuracy": "not reported",
+        "other": "Two-class (arousal vs. non-arousal) results: AUROC=0.91, AUPRC=0.74, optimal specificity=sensitivity=0.85. Three-class (non-arousal / non-apnoea arousal / apnoea arousal) results: volume under ROC surface (VUROS)=0.75, non-arousal specificity=0.72, apnoea-arousal sensitivity=0.76, non-apnoea-arousal sensitivity=0.69, AUPRC=0.18 (non-apnoea arousal) and 0.76 (apnoea arousal). LDA baseline comparison: VUROS=0.68, two-class AUROC=0.88."
+      }
+    },
+    "model": {
+      "architecture_family": "Ensemble",
+      "architecture_details": "Bank of 10 single-hidden-layer feed-forward neural networks (20 hidden units each, softmax output over 3 classes), with outputs combined by averaging the ten classifiers' probability estimates; compared against a linear discriminant analysis (LDA) classifier baseline. A first-order-hold upsampler converts epoch-level classifications to a 200Hz output annotation.",
+      "key_novelty": "Extends the authors' prior 2018 Challenge hand-crafted-feature FFNN system (which only detected non-apnoea arousals) to jointly classify both apnoea-related and non-apnoea-related arousals (3-class) from multi-signal polysomnogram data, increasing clinical applicability."
+    },
+    "input": {
+      "leads_used": "not applicable \u2014 uses polysomnogram (PSG) channels (SpO2, chin EMG, EOG, airflow, abdominal/chest respiratory effort, 6 EEG derivations: F3-M2, F4-M1, O1-M2, O2-M1, C4-M1, C3-M2), not 12-lead ECG",
+      "signal_length_window": "15-second epochs; multi-epoch context formed by combining features from 4 epochs on either side of the current epoch (~1 minute look-ahead/look-back)",
+      "sampling_rate": "200 Hz",
+      "preprocessing": "Artefact filtering and signal normalization per channel prior to epoch-based feature extraction; 59 time- and frequency-domain features extracted per 15s epoch (e.g. kurtosis, skewness, relative band energy, approximate entropy, signal envelope coefficient of variation)."
+    },
+    "data": {
+      "training_datasets": "2018 PhysioNet/Computing in Cardiology Challenge PSG dataset (994 overnight recordings from Massachusetts General Hospital sleep laboratories); no 2020 Challenge 12-lead ECG data used.",
+      "class_imbalance_handling": "not reported",
+      "augmentation_techniques": "not reported"
+    },
+    "training": {
+      "loss_function": "Cross-entropy cost function (for the FFNN classifier)",
+      "optimizer": "not reported",
+      "cross_validation_strategy": "10-fold cross-validation: 994 records randomly divided into ten sets of 99-100 records, nine used for training and one for testing, rotated across folds",
+      "hardware": "not reported"
+    },
+    "contribution": {
+      "summary": "Out of scope for the 2020 12-lead ECG classification challenge benchmark: this paper presents an extension of the authors' 2018 Challenge polysomnogram-arousal-detection system, using a bank of feed-forward neural networks to jointly detect apnoea and non-apnoea arousals from PSG signals.",
+      "code_available": "not reported",
+      "code_url": "not reported"
+    },
+    "entry_type": "out_of_scope"
+  }
+]

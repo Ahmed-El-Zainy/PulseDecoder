@@ -1,0 +1,51 @@
+{
+  "paper_id": "CinC2020-202",
+  "team_name": "not reported",
+  "authors_affiliation": "David Assaraf, Jeremy Levy, Janmajay Singh, Armand Chocron, Joachim A. Behar — Faculty of Biomedical Engineering, Technion-IIT, Haifa, Israel (Janmajay Singh: independent researcher)",
+
+  "result": {
+    "official_challenge_metric_score": "not reported",
+    "official_rank": "not reported",
+    "evaluation_split": "Local 80%/20% stratified train-test split and 5-fold cross-validation on training data only; authors state they 'did not manage to score our models on the Challenge hidden test set' for technical reasons",
+    "self_reported_metrics": {
+      "f1": "not reported",
+      "auroc": "not reported",
+      "sensitivity": "not reported",
+      "specificity": "not reported",
+      "accuracy": "not reported",
+      "other": "Challenge score (self-reported, not official): Feature-Engineering (FE) model 0.65 local test / 0.66+/-0.02 5-fold CV; Deep Learning (DL) model 0.52 local test / 0.54+/-0.04 5-fold CV; Ensemble (EL) model 0.66 local test / 0.66+/-0.03 5-fold CV. Per-class F-beta scores also reported in Table 3 (e.g. F_AF: FE 0.91, DL 0.41, EL 0.92; F_SNR: FE 0.80, DL 0.90, EL 0.86)."
+    }
+  },
+
+  "model": {
+    "architecture_family": "Ensemble",
+    "architecture_details": "Combines two independently trained models via logistic-regression stacking: (1) a feature-engineering (FE) pipeline — 113 morphological biomarkers (via wavedet delineation) plus 16 HRV features per lead, plus age/sex, fed into one-vs-rest random forest classifiers (750 estimators, max depth 70) with mRMR + floating recursive feature addition selection; (2) a deep learning (DL) model — 8 CNN cells (Conv1d-BatchNorm-ReLU-Conv1d-BatchNorm-ReLU-MaxPool-Dropout) with shortcut/residual connections every 2 cells, followed by a GRU layer and a multi-head fully-connected output (binary SNR-vs-rest head plus a 23-class multi-head).",
+    "key_novelty": "Directly compares a classical digital-biomarker feature-engineering approach (HRV + morphological features feeding a random forest) against a deep CNN-GRU representation-learning approach, then stacks both via a logistic-regression ensemble to combine their complementary strengths."
+  },
+
+  "input": {
+    "leads_used": "12",
+    "signal_length_window": "Variable-length recordings; DL model inputs zero-padded to a fixed 40,000 samples (80 s at 500 Hz); FE approach used a representative ECG cycle per lead for waveform delineation",
+    "sampling_rate": "Resampled to 500 Hz (native rates varied: 257/500/1000/2000 Hz across source databases)",
+    "preprocessing": "Electrode-switch detection and polarity correction; signal-quality screening via bSQI index (examples with bSQI < 0.8 discarded, ~3213 excluded); Butterworth band-pass filter (0.13-88 Hz); two notch filters at 50 Hz and 60 Hz for power-line interference"
+  },
+
+  "data": {
+    "training_datasets": "All 6 official challenge training databases (CPSC, CPSC-2, Georgia, PTB, PTB-XL, INCART) plus two external open-access datasets: Chapman University/Shaoxing People's Hospital (\"CUSPH\", 10646 examples) and Chapman University/Ningbo First Hospital (\"CUNFH\", 334 examples, mostly PVC); total n=53730 examples after quality/label exclusions",
+    "class_imbalance_handling": "Minority classes proportionally over-weighted in the one-vs-rest random forest classifiers; reduced problem to 24 multilabel classes by merging 3 pairs the challenge treats as equivalent (CRBBB/RBBB, PVC/VPB, PAC/SVPB)",
+    "augmentation_techniques": "not reported (class imbalance addressed via external real-world databases and class re-weighting rather than synthetic augmentation)"
+  },
+
+  "training": {
+    "loss_function": "Random forest: not applicable (Gini-based splits); Deep learning: weighted combination of BCEWithLogitsLoss and F-beta score loss, with the loss weighting treated as a tunable hyperparameter",
+    "optimizer": "Adam (deep learning model)",
+    "cross_validation_strategy": "Stratified 5-fold cross-validation for hyperparameter tuning of both the FE (random forest) and DL models; final evaluation on an 80%/20% stratified train-test split",
+    "hardware": "not reported"
+  },
+
+  "contribution": {
+    "summary": "Shows that engineered digital biomarkers (HRV + 113 morphological features per lead) fed into a random forest outperform an end-to-end CNN-GRU deep learning model on this task, and that stacking both in an ensemble yields the best overall local score.",
+    "code_available": "not reported",
+    "code_url": "not reported"
+  }
+}

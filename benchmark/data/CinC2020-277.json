@@ -1,0 +1,51 @@
+{
+  "paper_id": "CinC2020-277",
+  "team_name": "AI Strollers",
+  "authors_affiliation": "Rohit Pardasani (General Electric Healthcare, Bangalore, India) and Navchetan Awasthi (Massachusetts General Hospital, Harvard University, Boston, USA)",
+
+  "result": {
+    "official_challenge_metric_score": 0.077,
+    "official_rank": 32,
+    "evaluation_split": "official hidden test set (\"Full Test\")",
+    "self_reported_metrics": {
+      "f1": 0.142,
+      "auroc": 0.599,
+      "sensitivity": "not reported",
+      "specificity": "not reported",
+      "accuracy": 0.0,
+      "other": "Internal challenge validation set score 0.342 (distinct from official hidden Full Test score of 0.077); scores also reported separately for hidden Test 1 (0.212), Test 2 (0.359), and Test 3 (0.096) partitions; per-class thresholds, AUROC, AUPRC and F-measure given for all 24 classes on the validation set (Table 1)"
+    }
+  },
+
+  "model": {
+    "architecture_family": "CNN",
+    "architecture_details": "24 identical 1D-CNN sub-networks stacked in parallel, one per diagnosis class, each comprising 3 convolutional layers (kernel=11/stride=5/filters=64, kernel=5/stride=2/filters=64, kernel=3/stride=1/filters=1), each followed by ReLU, dropout (0.3), and batch normalization, then a flatten + dropout + dense layer with sigmoid activation producing a single scalar; the 24 per-class scalars are concatenated into a 24-dimensional output vector. Total ~3.8M parameters (3,778,968 trainable, 21,552 non-trainable).",
+    "key_novelty": "Class-dependent threshold approach: instead of training separate multi-class models, each of the 24 parallel CNN branches is thresholded individually (threshold chosen from the ROC curve to maximize TPR-FPR), allowing multi-label/multi-class classification in a single inference pass."
+  },
+
+  "input": {
+    "leads_used": "12",
+    "signal_length_window": "10000 samples fixed length (~20s at 500 Hz); signals longer than 10000 samples trimmed, shorter signals 'wrap' padded (signal repeated until reaching 10000 samples)",
+    "sampling_rate": "500 Hz",
+    "preprocessing": "Converted to physical units (mV) by dividing by each signal's analog-to-digital gain (gains varied: 200/mV, 4880/mV, 1000/mV); length homogenized via trimming (>10000 samples) or wrap-padding (<10000 samples)"
+  },
+
+  "data": {
+    "training_datasets": "Official challenge training dataset only (43,101 total samples; 37,619 samples with labels among the 27 scored classes, mapped to 24 classes, were used — 5,482 samples without a scored-class label were excluded); no external data",
+    "class_imbalance_handling": "Class-dependent decision thresholds selected per class via the ROC curve (maximizing TPR-FPR) rather than a fixed 0.5 threshold, applied at inference time",
+    "augmentation_techniques": "not reported"
+  },
+
+  "training": {
+    "loss_function": "Cross entropy loss",
+    "optimizer": "Adam (learning rate 1e-4; β1=0.99, β1=0.9 [as reported], ε=1e-7, decay=0.0001, amsgrad=False, clipvalue=0.5); L1 (1e-7) and L2 (1e-7) kernel regularizers and L2 (1e-7) bias regularizer",
+    "cross_validation_strategy": "not reported (single random split into training [24,452], validation [5,642], and testing [7,525] subsets; best model selected by validation loss)",
+    "hardware": "Linux workstation with Intel Xeon Silver 4110 CPU (2.10 GHz), 128 GB RAM, TITAN RTX GPU (24 GB); trained for 100 epochs, batch size 128, ~210 seconds/epoch; Keras with TensorFlow backend"
+  },
+
+  "contribution": {
+    "summary": "Proposes 24 parallel identical 1D-CNN branches (one per diagnosis class) with per-class ROC-optimized decision thresholds, enabling multi-label ECG classification in a single inference pass without training separate multi-class models.",
+    "code_available": "not reported",
+    "code_url": "not reported"
+  }
+}

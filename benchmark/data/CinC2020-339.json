@@ -1,0 +1,51 @@
+{
+  "paper_id": "CinC2020-339",
+  "team_name": "MIndS",
+  "authors_affiliation": "Marwen Sallem, Amina Ghrissi, Adnen Saadaoui, Vicente Zarzoso; National Institute of Applied Sciences and Technology, MMA Laboratory (Tunisia); Université Côte d'Azur, CNRS, I3S Laboratory (France); Vneuron (Tunisia)",
+
+  "result": {
+    "official_challenge_metric_score": -0.128,
+    "official_rank": 38,
+    "evaluation_split": "official hidden test set",
+    "self_reported_metrics": {
+      "f1": "not reported",
+      "auroc": "not reported",
+      "sensitivity": "not reported",
+      "specificity": "not reported",
+      "accuracy": 0.54,
+      "other": "Challenge validation score S=0.368 (hidden validation set); accuracy 0.54 is validation accuracy of the retained model. Preliminary (unofficial phase) 5-fold CV training scores: F2-score=0.77, G2-score=0.58, GM=0.67 (zero padding); F2=0.74, G2=0.54, GM=0.63 (signal repetition). Preliminary test set: F2-score=0.77, G2-score=0.55, GM=0.65."
+    }
+  },
+
+  "model": {
+    "architecture_family": "CNN",
+    "architecture_details": "VGG-ECG: a 13-layer fully convolutional 1D CNN inspired by VGG16, composed of blocks of 2-3 successive Conv3 (1x3 receptive field) layers alternated with average pooling layers; channel widths progress 64,64 / 128,128 / 256,256 (x4 blocks); dropout (p=0.3) for regularization.",
+    "key_novelty": "Adapts the VGG16 image-classification architecture to 1D multichannel ECG by using a deep stack of small-receptive-field (1x3) convolutions with average pooling, combined with truncation/zero-padding and downsampling strategies to standardize variable-length, multi-source recordings."
+  },
+
+  "input": {
+    "leads_used": "12",
+    "signal_length_window": "First 3000 time samples after downsampling kept (recordings originally 10s to 30min); shorter signals zero-padded or repeated to fill length. Preliminary experiments used the first 18000 samples of padded recordings.",
+    "sampling_rate": "Downsampled to 100 Hz (benchmarked against 50 Hz and 150 Hz; original recordings had varying sampling frequencies depending on data source)",
+    "preprocessing": "Downsampling to a standard frequency (100 Hz found best), truncation to first 3000 samples, zero padding or signal repetition for length standardization. Low-pass filtering and standard normalization were tested but did not improve scores."
+  },
+
+  "data": {
+    "training_datasets": "All official Challenge 2020 training data: 43101 12-lead ECG recordings from four data sources, filtered down to 37794 recordings belonging to at least one of the 27 scored classes; no external data used.",
+    "class_imbalance_handling": "Class weights applied to neural network nodes to balance classes during training.",
+    "augmentation_techniques": "not reported (proposed as future work, not implemented in this study)"
+  },
+
+  "training": {
+    "loss_function": "Binary cross-entropy (chosen over mean squared error, which performed worse)",
+    "optimizer": "Adam, learning rate 1e-3",
+    "cross_validation_strategy": "5-fold cross-validation used in preliminary experiments; final model trained on a 3/4 train / 1/4 validation split of the dataset",
+    "hardware": "Google Cloud Platform, n1-standard-4 instance (4 vCPUs, 15GB memory), NVIDIA Tesla T4 GPU; implemented in Python 3.7 / TensorFlow 2.3, tracked with Weights & Biases (Wandb)"
+  },
+
+  "contribution": {
+    "summary": "Proposes VGG-ECG, a deep 1D CNN inspired by VGG16, for multilabel 12-lead ECG rhythm classification, and addresses variable-length, multi-source recordings via signal truncation/padding and downsampling to a common sampling rate.",
+    "code_available": "not reported",
+    "code_url": "not reported"
+  }
+}

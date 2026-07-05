@@ -1,0 +1,51 @@
+{
+  "paper_id": "CinC2020-138",
+  "team_name": "Eagles",
+  "authors_affiliation": "Andrew Demonbreun, Grace M Mirsky (Benedictine University, Lisle, IL, USA)",
+
+  "result": {
+    "official_challenge_metric_score": 0.205,
+    "official_rank": 20,
+    "evaluation_split": "official hidden full test set (abstract: validation score 0.214, full test score 0.205, rank 20/41)",
+    "self_reported_metrics": {
+      "f1": "not reported",
+      "auroc": "not reported",
+      "sensitivity": "not reported",
+      "specificity": "not reported",
+      "accuracy": "not reported",
+      "other": "Unofficial phase best entry: F_beta = 0.310, G_beta = 0.170. Training validation accuracy ranged 83-98% across different arrhythmias (no single aggregate figure reported)."
+    }
+  },
+
+  "model": {
+    "architecture_family": "Ensemble",
+    "architecture_details": "Twelve independent per-lead models, each a modified SqueezeNet CNN (transfer learning) fine-tuned on scalogram images generated from that lead's ECG signal via continuous wavelet transform; final six SqueezeNet layers modified (60% dropout, 1x1 conv with filters = number of output classes, classification layer without preset labels); predictions from the 12 lead-specific models combined via a voting scheme (each model contributes 0.083 per diagnosis code; codes with summed score >0.3 (>=4 votes) are assigned, else the max-scoring code(s) are used).",
+    "key_novelty": "Trains a separate SqueezeNet transfer-learning CNN per ECG lead on wavelet scalogram images (rather than one model over all 12 leads), then fuses the 12 lead-level predictions with a simple vote-counting scheme to allow multi-label diagnosis with increased confidence."
+  },
+
+  "input": {
+    "leads_used": "12 (each lead modeled independently, then fused by voting)",
+    "signal_length_window": "not reported",
+    "sampling_rate": "not reported",
+    "preprocessing": "ECG signals converted to scalograms (time-frequency representation of absolute continuous wavelet transform coefficients) per lead, used as images for SqueezeNet transfer learning"
+  },
+
+  "data": {
+    "training_datasets": "Official PhysioNet/CinC 2020 Challenge training data (dataset breakdown not itemized in paper); diagnosis categories reduced to the 27 individually scored classes plus 49 label combinations occurring at least 50 times in the training set (76 total diagnosis categories); records without at least one of these 76 categories were excluded",
+    "class_imbalance_handling": "Balanced subsampling: only ten example signals per diagnosis combination were used for training, chosen for a balanced dataset processable within limited computing resources",
+    "augmentation_techniques": "not reported"
+  },
+
+  "training": {
+    "loss_function": "crossentropyex (cross-entropy) classification loss (default SqueezeNet output layer)",
+    "optimizer": "Stochastic gradient descent with momentum (SGDM); initial learning rate 3e-4, mini-batch size 10, max epochs 15",
+    "cross_validation_strategy": "not reported",
+    "hardware": "not reported"
+  },
+
+  "contribution": {
+    "summary": "Applies wavelet-scalogram transfer learning with a modified SqueezeNet to build 12 separate per-lead ECG classifiers and combines their outputs with a vote-counting scheme, enabling multi-label arrhythmia diagnosis while leveraging lead-specific anatomical sensitivity to different arrhythmias.",
+    "code_available": "not reported",
+    "code_url": "not reported"
+  }
+}

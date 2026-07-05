@@ -1,0 +1,51 @@
+{
+  "paper_id": "CinC2020-456",
+  "team_name": "UIDT-UNAM",
+  "authors_affiliation": "Jonathan R Torres, K De Los Ríos, Miguel A Padilla; Institute of Applied Sciences and Technology / Institute of Physics, Universidad Nacional Autónoma de México (UNAM), Mexico",
+
+  "result": {
+    "official_challenge_metric_score": "not reported",
+    "official_rank": "not reported",
+    "evaluation_split": "10-fold cross-validation on public training data only (local training/validation/local-testing split of 70%/15%/15%); authors state they had not yet been scored on the official hidden test set",
+    "self_reported_metrics": {
+      "f1": 0.825,
+      "auroc": "not reported",
+      "sensitivity": "not reported",
+      "specificity": 0.9157,
+      "accuracy": "not reported",
+      "other": "Unofficial (self-computed) S-score of 0.766 (76.60%) on local test split; average loss of 0.0617"
+    }
+  },
+
+  "model": {
+    "architecture_family": "CNN",
+    "architecture_details": "Two parallel VGG-16-based convolutional branches trained from scratch: one branch takes 64x64 grayscale raw-signal time-series images, the other takes 64x64 grayscale time-frequency representation (TFR) images obtained via Wavelet Synchrosqueezing (WS). Each branch has 5 convolutional/max-pooling stages (3x3 kernels, 2x2 pooling), feeding into a 3-layer fully-connected head (4096-feature first FC layer) ending in a 27-channel sigmoid output layer.",
+    "key_novelty": "Dual-branch (parallel) CNN that fuses raw ECG waveform images with wavelet-synchrosqueezing time-frequency images, feeding both representations into a shared VGG-16-derived architecture to capture complementary morphology and instantaneous-frequency features."
+  },
+
+  "input": {
+    "leads_used": "12",
+    "signal_length_window": "1.2 s segments taken from the first 6 s of each recording; 120 images generated per patient",
+    "sampling_rate": "not reported",
+    "preprocessing": "Wavelet transform (Daubechies db4) denoising, segmentation into 1.2 s windows, conversion into two 64x64 grayscale image sets: (1) plotted raw time-series and (2) time-frequency representation via Wavelet Synchrosqueezing (based on continuous wavelet transform)"
+  },
+
+  "data": {
+    "training_datasets": "Six official public Challenge datasets (four sources) covering 111 identified arrhythmia labels, reduced to 27 assessed classes; over 37,134 12-lead ECG records processed into ~4,456,080 beat images; no external (non-Challenge) data used",
+    "class_imbalance_handling": "not reported",
+    "augmentation_techniques": "not reported"
+  },
+
+  "training": {
+    "loss_function": "not reported",
+    "optimizer": "not reported",
+    "cross_validation_strategy": "10-fold cross-validation; batch size and learning rate hyperparameters swept (batch sizes 64-1024, lr=0.001, 50 epochs), best batch size found to be 512",
+    "hardware": "Miztli-UNAM Supercomputer"
+  },
+
+  "contribution": {
+    "summary": "Proposes a parallel dual-input CNN based on VGG-16 that combines raw ECG waveform images with wavelet-synchrosqueezing time-frequency images to classify 27 cardiac arrhythmia types from 12-lead ECGs, reporting only cross-validated results on the public training data.",
+    "code_available": "not reported",
+    "code_url": "not reported"
+  }
+}

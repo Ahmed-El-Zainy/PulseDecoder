@@ -1,0 +1,51 @@
+{
+  "paper_id": "CinC2020-171",
+  "team_name": "HITTING",
+  "authors_affiliation": "Radovan Smisek, Andrea Nemcova, Lucie Marsanova, Lukas Smital, Martin Vitek, Jiri Kozumplik, Brno University of Technology (Faculty of Electrical Engineering and Communication, Department of Biomedical Engineering); Radovan Smisek also affiliated with The Czech Academy of Sciences, Institute of Scientific Instruments, Brno, Czech Republic",
+
+  "result": {
+    "official_challenge_metric_score": 0.354,
+    "official_rank": 11,
+    "evaluation_split": "official hidden test set (full test score 0.354); paper also reports a challenge hidden validation score of 0.435, and per-pathology F1 training scores on the public CPSC, CPSC2, PTB-XL and Georgia databases (5-fold cross-validation used when training the classification trees)",
+    "self_reported_metrics": {
+      "f1": "not reported as a single aggregate value; per-pathology F1 scores are reported in Table 1 for CPSC, CPSC2, PTB-XL, Georgia and the hidden validation set (e.g. AF: 0.9263/0.7394/0.9141/0.7528/0.83; STach: -/0.8305/0.8114/0.8865/0.844; LBBB: 0.7728/0.0506/0.8029/0.7432/0.697; full table in paper)",
+      "auroc": "not reported",
+      "sensitivity": "not reported",
+      "specificity": "not reported",
+      "accuracy": "not reported",
+      "other": "Challenge hidden validation score of 0.435 (distinct from the official full test score of 0.354)"
+    }
+  },
+
+  "model": {
+    "architecture_family": "Other",
+    "architecture_details": "Not a neural network. A fully rule-based/feature-engineering pipeline: QRS detection via a combination of three independent detectors (phasor transform, continuous wavelet transform, S-transform), QRS morphology clustering by cross-correlation to isolate the dominant morphology, averaging of the representative PQRST segment, detection of P/QRS/T wave onsets and offsets (wavelet transform + thresholding using the bior 1.5 wavelet for QRS, phasor-transform-based detection for P waves, wavelet+tangent method for T wave offset), followed by hand-crafted feature extraction and per-pathology classification using medical-definition thresholds (for STach, SB, IAVB/LPR, LBBB, PR, NSIVCB, LQRSV, SNR) or classification trees (for AF, AFL, SA, RBBB, IRBBB, LAnFB, LAD, RAD, PAC, PVC, TAb).",
+    "key_novelty": "An interpretable, fully rule-based (non-deep-learning) diagnostic pipeline that averages a representative PQRST complex per record and applies explicit medical-definition thresholds or shallow classification trees on hand-crafted morphological/interval features, prioritizing explainability over raw performance."
+  },
+
+  "input": {
+    "leads_used": "12",
+    "signal_length_window": "Whole-record processing; only the QRS complexes of the dominant morphology cluster in each record are averaged into a single representative PQRST segment used for feature extraction (not a fixed-duration window)",
+    "sampling_rate": "not reported",
+    "preprocessing": "QRS detection via combined phasor/continuous-wavelet/S-transform detectors; bandpass filtering (20-40 Hz) for AF-related feature extraction; QRS alignment and cross-correlation-based clustering by morphology; averaging of the dominant-morphology PQRST segment; wavelet-based (bior 1.5) onset/offset detection for QRS, phasor-transform-based P-wave detection, and wavelet+tangent-based T-wave offset detection"
+  },
+
+  "data": {
+    "training_datasets": "All 6 official Challenge databases used for evaluation/detection (CPSC2018, CPSC2/Southeast University China, St Petersburg INCART, PTB Diagnostic ECG Database, PTB-XL, Georgia); only CPSC, PTB-XL and Georgia databases were used to train the classification trees. No external (non-Challenge) data used.",
+    "class_imbalance_handling": "not reported",
+    "augmentation_techniques": "not reported"
+  },
+
+  "training": {
+    "loss_function": "not applicable — rule-based/classification-tree method, not a trained loss-optimized neural network",
+    "optimizer": "not applicable — classification trees used, not gradient-based optimization",
+    "cross_validation_strategy": "5-fold cross-validation used when fitting the classification trees (to avoid overfitting)",
+    "hardware": "not reported"
+  },
+
+  "contribution": {
+    "summary": "Presents a fully interpretable, non-deep-learning ECG classification pipeline for 19 cardiac pathologies, based on QRS/P/T wave delineation, averaged representative PQRST morphology, and either medically-defined thresholds or shallow classification trees on hand-crafted features, trading some performance for transparency about which features and thresholds drive each diagnosis.",
+    "code_available": "not reported",
+    "code_url": "not reported"
+  }
+}

@@ -1,0 +1,51 @@
+{
+  "paper_id": "CinC2020-162",
+  "team_name": "Triology",
+  "authors_affiliation": "Yunkai Yu, Yuyang You (Beijing Institute of Technology); Zhihong Yang (Institute of Medicinal Plant Development, Chinese Academy of Medical Sciences); Peiyao Li (Tsinghua University); Zhicheng Yang (PAII Inc, Palo Alto, USA), Beijing, China / Palo Alto, USA",
+
+  "result": {
+    "official_challenge_metric_score": "not reported",
+    "official_rank": "not reported",
+    "evaluation_split": "Offline validation split only (80%/20% train/validation split of the pooled training databases, all 24 categories present in both); no official hidden test set score or official leaderboard rank is reported in the paper",
+    "self_reported_metrics": {
+      "f1": "not reported",
+      "auroc": "not reported",
+      "sensitivity": "not reported",
+      "specificity": "not reported",
+      "accuracy": "not reported",
+      "other": "Challenge metric score of 0.328 on their own offline validation set (20% held-out split); paper notes false positives were the main source of error in this offline validation (abstract states false negatives are the main errors, but Section 4 states false positives are major errors - both phrasings appear in the paper)"
+    }
+  },
+
+  "model": {
+    "architecture_family": "ResNet",
+    "architecture_details": "Lightweight 1-D ResNet-18-based backbone (12 leads treated as input channels) with two parallel convolutional branches of the same kernel size (3) but different dilation rates (1 and 2) for multi-scale feature extraction, instance normalization instead of batch normalization, and anti-aliased downsampling blocks (max-pool with stride 1 followed by a blur-pooling layer with stride 2, per Zhang 2019) for shift invariance. Age and sex are concatenated with the pooled feature vector before two fully-connected layers and a combined sigmoid/softmax output layer. Input records are split into fixed-length segments processed independently, with segment-level probabilities averaged (soft voting) to produce a record-level prediction.",
+    "key_novelty": "Combines anti-aliased (blur-pooled) downsampling blocks with a very low 80 Hz sampling rate to build a lightweight, real-time-capable ECG classifier, and randomly alternates between weighted cross-entropy (softmax) and Lovász-softmax (sigmoid) losses during training to encourage inter-class competition in the multi-label setting."
+  },
+
+  "input": {
+    "leads_used": "12",
+    "signal_length_window": "Variable-length records split into fixed-size segments (segment length n samples; per-segment predictions averaged for the record-level output)",
+    "sampling_rate": "80 Hz (downsampled; authors compared 60, 80, and 100 Hz and selected 80 Hz to balance information content vs. lightweight computation)",
+    "preprocessing": "Downsampling to 80 Hz; per-lead mean subtraction; exclusion of records with signal absence or high noise (based on a standard-deviation threshold)"
+  },
+
+  "data": {
+    "training_datasets": "Pooled official Challenge training data from four sources: CPSC2018 (training + unused data), St Petersburg INCART 12-lead Arrhythmia Database, PTB (PTB Diagnostic ECG Database, 549 records, and PTB-XL, 21,837 records), and the Georgia database (Emory University). No external (non-Challenge) data used.",
+    "class_imbalance_handling": "Undersampling: randomly removed 30% of normal-class records from the training set to address the long-tailed class distribution (Normal class dominant)",
+    "augmentation_techniques": "Gaussian noise addition, random erasing, and random shifting"
+  },
+
+  "training": {
+    "loss_function": "Randomly alternates per batch (via a uniform random variable v) between weighted cross-entropy loss (applied to softmax outputs) and Lovász-softmax loss (applied to sigmoid outputs) to encourage inter-class competition",
+    "optimizer": "Adam optimizer, learning rate 0.0003, with gradient accumulation and back-propagation every 64 records; dropout probability 0.3",
+    "cross_validation_strategy": "Simple 80/20 train/validation split of the pooled dataset (not k-fold cross-validation); challenge metric evaluated on the validation set every 3 epochs with best parameters saved",
+    "hardware": "not reported"
+  },
+
+  "contribution": {
+    "summary": "Proposes a lightweight, real-time-capable 12-lead ECG classifier that runs on heavily downsampled (80 Hz) signals using a ResNet-18-based backbone with anti-aliased (blur-pool) downsampling and multi-scale dilated convolutions, plus a randomized dual-loss (cross-entropy/Lovász-softmax) training scheme and age/sex features.",
+    "code_available": "not reported",
+    "code_url": "not reported"
+  }
+}

@@ -1,0 +1,51 @@
+{
+  "paper_id": "CinC2020-185",
+  "team_name": "Madhardmax",
+  "authors_affiliation": "Hardik Rajpal, Madalina Sas, Chris Lockwood, Rebecca Joakim, Nicholas S Peters, Max Falkenberg; Centre for Complexity Science, Imperial College London (UK), with contributors from Wexham Park Hospital and an independent researcher (Luxembourg)",
+
+  "result": {
+    "official_challenge_metric_score": 0.155,
+    "official_rank": 24,
+    "evaluation_split": "official hidden test set (out of 41 successful entries); validation leaderboard score was 0.533 prior to final test scoring",
+    "self_reported_metrics": {
+      "f1": "not reported",
+      "auroc": "not reported",
+      "sensitivity": 0.936,
+      "specificity": "not reported",
+      "accuracy": 0.398,
+      "other": "On training/validation data (with IT features, threshold 0.9): AUPRC 0.55, Precision 0.776, F2 score 0.626 (improved to 0.739 after threshold tuning). Without IT features: Accuracy 0.379, Precision 0.804, Recall 0.934, F2 0.601 (0.731 after threshold tuning)."
+    }
+  },
+
+  "model": {
+    "architecture_family": "Ensemble",
+    "architecture_details": "Per-condition binary classifiers using XGBoost (gradient-boosted decision tree ensembles), one ensemble trained independently per scored heart condition, with a tuned probability threshold per class for binarization.",
+    "key_novelty": "Combines standard ECG waveform/interval/power-spectrum features with information-theoretic measures borrowed from neuroscience (normalized Lempel-Ziv complexity of the binarized signal, and synergy/redundancy captured via O-Information and S-Information across leads) as inputs to an interpretable per-condition XGBoost classifier."
+  },
+
+  "input": {
+    "leads_used": "12",
+    "signal_length_window": "not reported",
+    "sampling_rate": "not reported",
+    "preprocessing": "Second-order Butterworth band-pass filter (1.5-25 Hz) per channel, followed by 'db4' discrete wavelet transform denoising; segment/interval features normalized by average RR interval, wave heights normalized by absolute R peak height."
+  },
+
+  "data": {
+    "training_datasets": "Combined official Challenge training datasets acquired from four different countries (specific per-database breakdown not given)",
+    "class_imbalance_handling": "Random undersampling of the majority class to match the minority class population, performed separately for each binary per-condition classifier",
+    "augmentation_techniques": "not reported"
+  },
+
+  "training": {
+    "loss_function": "Precision-Recall Area Under the Curve (AUPRC) minimized during training; F2 metric used for early stopping",
+    "optimizer": "not reported (XGBoost gradient boosting; hyperparameters selected via Grid Search: max_depth=10, eta=0.1, gamma=0, lambda=1, with early stopping)",
+    "cross_validation_strategy": "K-fold cross-validation used both for parameter tuning/robustness checks and for threshold optimization",
+    "hardware": "not reported"
+  },
+
+  "contribution": {
+    "summary": "Proposes an interpretable per-condition XGBoost classifier for 12-lead ECG classification that augments standard ECG waveform features with information-theoretic measures (Lempel-Ziv complexity and O-Information-based synergy/redundancy across leads) adapted from neuroscience.",
+    "code_available": true,
+    "code_url": "https://github.com/mearlboro/PhysioNet_12ECG"
+  }
+}

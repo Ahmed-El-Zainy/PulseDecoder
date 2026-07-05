@@ -1,0 +1,51 @@
+{
+  "paper_id": "CinC2020-363",
+  "team_name": "desafinado",
+  "authors_affiliation": "Durmus Umutcan Uguz, Felix Berief, Steffen Leonhardt, Christoph Hoog Antink; Medical Information Technology, Helmholtz-Institute for Biomedical Engineering, RWTH Aachen University, Aachen, Germany",
+
+  "result": {
+    "official_challenge_metric_score": 0.233,
+    "official_rank": 19,
+    "evaluation_split": "official hidden test set (full test set, rank 19 of 41); also report a challenge validation-phase score of 0.576 and a 10-fold training cross-validation mean score of 0.57",
+    "self_reported_metrics": {
+      "f1": 0.298,
+      "auroc": 0.822,
+      "sensitivity": "not reported",
+      "specificity": "not reported",
+      "accuracy": 0.089,
+      "other": "Full test set AUPRC 0.362. Per-test-database scores: Test Database 1: AUROC 0.967, F-measure 0.182, score 0.681; Test Database 2: AUROC 0.887, F-measure 0.412, score 0.556; Test Database 3: AUROC 0.806, F-measure 0.202, score -0.013. Official challenge validation-phase score: 0.576 (AUROC 0.906, AUPRC 0.478, accuracy 0.224, F-measure 0.413)."
+    }
+  },
+
+  "model": {
+    "architecture_family": "Ensemble",
+    "architecture_details": "One-vs-Rest scheme with 25 independent XGBoost gradient-boosted-tree binary classifiers (one per scored class), each classifying a hand-engineered feature vector per recording; positive samples for class k reweighted by wk=(Ntot-Nk)/Nk to counter class imbalance; per-class decision thresholds tk tuned via cross-validation to optimize the challenge score.",
+    "key_novelty": "Introduces a novel beat-to-beat Pearson-correlation analysis on Kors-transformed orthogonal XYZ leads to identify 'dissonant' (least similar) vs. 'accordant' (most similar) heartbeats relative to the median beat, isolating arrhythmic beats occurring among otherwise normal cycles; combined with classical fiducial-point timing/waveform features and wavelet-transform features, fed into per-class XGBoost classifiers."
+  },
+
+  "input": {
+    "leads_used": "12 (plus derived orthogonal XYZ leads via Kors transformation)",
+    "signal_length_window": "not reported (whole-recording, beat-level feature extraction rather than a fixed window)",
+    "sampling_rate": "not reported",
+    "preprocessing": "Low-pass filtered at 80Hz; baseline wander removed via a two-step median filter (200ms and 600ms window lengths); Kors transformation applied to derive orthogonal XYZ leads; beats segmented using BioSPPy and the Pan-Tompkins QRS detection algorithm"
+  },
+
+  "data": {
+    "training_datasets": "All official Challenge training datasets (CPSC, CPSC-unused, Georgia, PTB, PTB-XL, StPetersburg); generalization also evaluated via leave-one-dataset-out cross-validation",
+    "class_imbalance_handling": "One-vs-Rest positive-sample reweighting per class by wk=(Ntot-Nk)/Nk (negative samples weighted 1); per-class decision thresholds tuned during cross-validation to optimize the challenge score",
+    "augmentation_techniques": "not reported"
+  },
+
+  "training": {
+    "loss_function": "not reported (XGBoost's internal gradient-boosting objective with per-class sample reweighting)",
+    "optimizer": "not reported (XGBoost gradient boosting; hyperparameters gamma, min_child_weight, and max_depth were extensively tuned)",
+    "cross_validation_strategy": "10-fold cross-validation on the combined training data; additional leave-one-dataset-out cross-validation (holding out entire data sources) to evaluate generalization to unseen data sources",
+    "hardware": "not reported (evaluation-system runtime on the official challenge system: 101 hours 28 minutes)"
+  },
+
+  "contribution": {
+    "summary": "Combines domain-specific ECG timing/waveform features with domain-agnostic wavelet features and a novel beat-to-beat Pearson-correlation analysis (on Kors-transformed XYZ leads) to detect atypical beats, classified via per-class One-vs-Rest XGBoost gradient-boosted trees with imbalance reweighting and tuned decision thresholds.",
+    "code_available": "not reported",
+    "code_url": "not reported"
+  }
+}

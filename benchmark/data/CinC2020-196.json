@@ -1,0 +1,51 @@
+{
+  "paper_id": "CinC2020-196",
+  "team_name": "MetaHeart",
+  "authors_affiliation": "Zhengling He, Pengfei Zhang, Lirui Xu, Zhongrui Bai, Hao Zhang, Weisong Li, Pan Xia, Xianxiang Chen; State Key Laboratory of Transducer Technology, Aerospace Information Research Institute, Chinese Academy of Sciences, Beijing, China",
+
+  "result": {
+    "official_challenge_metric_score": 0.370,
+    "official_rank": "not reported (team states they were not ranked due to omissions in their submission)",
+    "evaluation_split": "official hidden test set (full test set); also reported per hidden database subset and on a validation leaderboard set",
+    "self_reported_metrics": {
+      "f1": "not reported",
+      "auroc": "not reported",
+      "sensitivity": "not reported",
+      "specificity": "not reported",
+      "accuracy": "not reported",
+      "other": "Challenge metric breakdown: Validation Set 0.616, Hidden CPSC Set 0.758, Hidden G12EC Set 0.590, Hidden Undisclosed Set 0.194, Full Test Set 0.370. Average 5-fold cross-validation challenge metric on public training data: 0.621 (ablation study best configuration; other configurations ranged 0.569-0.607)."
+    }
+  },
+
+  "model": {
+    "architecture_family": "CNN",
+    "architecture_details": "2-D convolutional neural network treating the 12-lead ECG as a 2D input with 'lead' and 'sample' dimensions; stacked Block1/Block2/Block3 residual-style convolutional blocks with decaying filter sizes and strides, Squeeze-and-Excitation (SE) channel attention modules, batch normalization, spatial dropout, and a global average pooling layer feeding a fully-connected sigmoid output layer for 27-class multi-label prediction.",
+    "key_novelty": "Represents multi-lead ECG as a 2-D [lead, time] tensor (rather than converting to a time-frequency image) and controls cross-lead information fusion by progressively widening the convolution filter size along the lead dimension in deeper blocks, combined with SE attention."
+  },
+
+  "input": {
+    "leads_used": "12",
+    "signal_length_window": "first 10 seconds of each record (chosen as the median record length), truncated or zero-padded to a consistent 10s length",
+    "sampling_rate": "downsampled to 100 Hz (source data ranged 257-1000 Hz)",
+    "preprocessing": "Band-pass filter with cutoff 0.05-20 Hz to remove baseline drift and high-frequency noise; Z-score normalization applied per lead."
+  },
+
+  "data": {
+    "training_datasets": "43,101 subjects from the 4 officially published Challenge training data sources; no external data reported",
+    "class_imbalance_handling": "Weighted binary cross-entropy loss with per-class weights w_i = log2(1 / (n_i/N + ε)), ε=0.01, based on class frequency",
+    "augmentation_techniques": "not reported"
+  },
+
+  "training": {
+    "loss_function": "Weighted binary cross-entropy",
+    "optimizer": "Adam, initial learning rate 0.001, with early stopping and learning-rate reduction (factor 0.5) on plateau",
+    "cross_validation_strategy": "5-fold cross-validation on the public training data for verification/tuning; within each split, data further divided 8:2 train/test and the training portion 9:1 train/validation for hyperparameter selection",
+    "hardware": "not reported"
+  },
+
+  "contribution": {
+    "summary": "Proposes a 2-D CNN with residual-style blocks and Squeeze-and-Excitation attention that represents 12-lead ECG as a 2-D [lead, time] tensor, progressively fusing cross-lead information in deeper layers via widening convolution kernels along the lead axis.",
+    "code_available": "not reported",
+    "code_url": "not reported"
+  }
+}

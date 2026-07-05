@@ -1,0 +1,51 @@
+{
+  "paper_id": "CinC2020-406",
+  "team_name": "BiSP Lab",
+  "authors_affiliation": "Matteo Bodini, Massimo W Rivolta, Roberto Sassi — Dipartimento di Informatica \"Giovanni Degli Antoni\", Universita degli Studi di Milano, Milan, Italy",
+
+  "result": {
+    "official_challenge_metric_score": -0.179,
+    "official_rank": 40,
+    "evaluation_split": "official private (hidden) test set; also report 0.241 on their own validation set prior to the private test",
+    "self_reported_metrics": {
+      "f1": "not reported",
+      "auroc": "not reported",
+      "sensitivity": "not reported",
+      "specificity": "not reported",
+      "accuracy": "not reported",
+      "other": "Per-class recall values reported (e.g., RBBB 0.93, LBBB 0.85, I-AVB 0.88; worst: Pacing 0.71, Flutter 0.74, normal-ECG detection 0.74); PVC detection AUROC 0.82 with true positive/negative rates of 0.72 at a 1.44 mV threshold; self-reported validation score of 0.241 (Challenge metric) before private test evaluation"
+    }
+  },
+
+  "model": {
+    "architecture_family": "Ensemble",
+    "architecture_details": "Ensemble of four classifiers: three CNNs (P-CNN, QRS-CNN, T-CNN), each with one or more convolutional layers plus a fully connected layer, operating on concatenated multi-lead average P/QRS/T segments extracted from an averaged PQRST beat template, to classify morphology-altering abnormalities; a feed-forward neural network (Rhythm-NN, two hidden layers of 64 and 32 neurons) using RR-interval-derived features (median, std, min/max distance, RMSSD) for irregular-rhythm classes; and a threshold-based classifier on the vector-magnitude signal's maximum amplitude for PVC detection. Outputs of all sub-models are concatenated into the final label vector; \"normal\" is assigned only when no other abnormality is detected.",
+    "key_novelty": "Combines classical average-template/segment-based ECG signal processing (per-lead averaged P, QRS, and T segments) with small dedicated CNNs per segment type and rhythm-only features, rather than feeding raw whole ECG signals into one large deep network."
+  },
+
+  "input": {
+    "leads_used": "12",
+    "signal_length_window": "First 1-minute segment of each ECG (or less if shorter); average-beat templates built from R-260ms to R+370ms per lead (P segment R-260 to R-150ms, QRS R-50 to R+50ms, T R+100 to R+370ms)",
+    "sampling_rate": "500 Hz (downsampled or upsampled to 500Hz)",
+    "preprocessing": "Resampling to 500Hz; bandpass Butterworth filter (3rd order, zero-phase, 0.67-30Hz); beat detection via gqrs on vector magnitude, refined with the Woody algorithm; signal-quality check via average QRS cross-correlation (threshold 0.9), discarding 4752 low-quality signals; construction of per-lead average PQRST templates"
+  },
+
+  "data": {
+    "training_datasets": "All official challenge training data (43,101 ECGs merged from Southeast University/China Physiological Signal Challenge 2018, St. Petersburg INCART, PTB (Physikalisch Technische Bundesanstalt), and Georgia 12-Lead ECG Challenge Database); no external data",
+    "class_imbalance_handling": "not reported",
+    "augmentation_techniques": "not reported"
+  },
+
+  "training": {
+    "loss_function": "Average binary cross-entropy across classes (CNNs and FFNN)",
+    "optimizer": "Adam (epsilon=1e-8, beta1=0.9, beta2=0.999), batch size 64, 1000 epochs",
+    "cross_validation_strategy": "Stratified 70/30 train/validation split per sub-model dataset; final submitted model retrained on all available data without splitting",
+    "hardware": "not reported"
+  },
+
+  "contribution": {
+    "summary": "Proposes a hybrid ensemble that combines classical average-template ECG signal processing (per-lead P/QRS/T segment averaging and RR-interval features) with small dedicated neural networks per abnormality type, rather than training one large deep network on raw ECG signals.",
+    "code_available": "not reported",
+    "code_url": "not reported"
+  }
+}

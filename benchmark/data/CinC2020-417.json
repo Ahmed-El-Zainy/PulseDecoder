@@ -1,0 +1,51 @@
+{
+  "paper_id": "CinC2020-417",
+  "team_name": "AUTh Team",
+  "authors_affiliation": "Charilaos Zisou, Andreas Sochopoulos, Konstantinos Kitsios — Department of Electrical and Computer Engineering, Aristotle University of Thessaloniki, Thessaloniki, Greece",
+
+  "result": {
+    "official_challenge_metric_score": 0.281,
+    "official_rank": 13,
+    "evaluation_split": "official hidden test set; also report 0.593 via 5-fold cross-validation on the full training set",
+    "self_reported_metrics": {
+      "f1": "not reported",
+      "auroc": 0.946,
+      "sensitivity": "not reported",
+      "specificity": "not reported",
+      "accuracy": "not reported",
+      "other": "5-fold CV Challenge metric: CRNN 0.511, LightGBM 0.549, Ensemble 0.593; 5-fold CV AUROC: CRNN 0.908, LightGBM 0.935, Ensemble 0.946 (AUROC/Challenge metric values are on the training set via CV, not the hidden test set)"
+    }
+  },
+
+  "model": {
+    "architecture_family": "Ensemble",
+    "architecture_details": "Ensemble of a 1D convolutional recurrent neural network (CRNN: convolutional layers with 24 filters each, LeakyReLU activation, batch normalization, dropout, a self-attention mechanism, and a bidirectional GRU) and LightGBM (gradient boosting decision tree using hand-engineered features: wavelet multiresolution analysis and wavelet-bispectrum higher-order statistics per lead, signal energy/autocorrelation/SNR/R-peak amplitude statistics, HRV time/frequency/nonlinear features, plus patient age and sex). The two models' class probabilities are combined via class-specific weighted averaging with class-specific thresholds, both tuned by a genetic algorithm (fitness = 5-fold Challenge metric average); final submission uses 10-fold bagging (10 ensemble models averaged).",
+    "key_novelty": "Combines a deep CRNN with self-attention with a feature-engineered LightGBM model using class-specific weights and thresholds tuned by a genetic algorithm, yielding an interpretable per-class breakdown of which model type is more predictive (LightGBM favored for HRV-related rhythm classes, CRNN favored for QRS-morphology classes)."
+  },
+
+  "input": {
+    "leads_used": "12",
+    "signal_length_window": "10s (truncated or zero-padded to 10s)",
+    "sampling_rate": "500 Hz (resampled)",
+    "preprocessing": "Data relabeling to 24 target scored classes (removing unscored diagnoses); 3rd-order low-pass Butterworth filter (20Hz cutoff) for high-frequency noise; Notch filter (0.01Hz cutoff) for baseline wander; resampling to 500Hz and truncation/padding to 10s; per-lead normalization to zero mean/unit variance for CRNN input"
+  },
+
+  "data": {
+    "training_datasets": "All official challenge training datasets combined, relabeled from >100 raw classes down to 24 target scored classes (6 pairwise-identical classes merged, unscored diagnoses removed); no external data",
+    "class_imbalance_handling": "SMOTE oversampling of the minority class to 10% of the majority class combined with random under-sampling of the majority class by 50%, applied for LightGBM's one-vs-rest binary classifiers",
+    "augmentation_techniques": "not reported"
+  },
+
+  "training": {
+    "loss_function": "LightGBM: binary logloss objective per one-vs-rest binary classifier; CRNN: not reported",
+    "optimizer": "LightGBM: gradient boosting with learning rate 0.075, hyperparameters (feature fraction, lambda l1/l2, max depth, min child weight, min split gain, num leaves) tuned via Bayesian optimization, early stopping on validation AUROC; CRNN: Adam optimizer with Xavier weight initialization, early stopping on validation AUROC",
+    "cross_validation_strategy": "5-fold iterative-stratification cross-validation for multi-label data (per Sechidis et al.); genetic algorithm tunes ensemble weights/thresholds using 5-fold Challenge metric average as fitness; 10-fold bagging performed for the final submitted ensemble",
+    "hardware": "not reported"
+  },
+
+  "contribution": {
+    "summary": "Proposes an ensemble of a CRNN (with self-attention and a bidirectional GRU) and a feature-engineered LightGBM model, combined via class-specific weights and thresholds optimized by a genetic algorithm, showing the two model types are complementary across abnormality types and outperform either alone.",
+    "code_available": "not reported",
+    "code_url": "not reported"
+  }
+}

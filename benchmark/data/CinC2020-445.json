@@ -1,0 +1,51 @@
+{
+  "paper_id": "CinC2020-445",
+  "team_name": "Sharif AI Team",
+  "authors_affiliation": "Hosein Hasani, Adeleh Bitarafan, Mahdieh Soleymani Baghshah; Sharif University of Technology, Tehran, Iran",
+
+  "result": {
+    "official_challenge_metric_score": 0.437,
+    "official_rank": 5,
+    "evaluation_split": "official hidden test set (full test score 0.437, out of 41 teams in the final official ranking); paper also reports an official validation score of 0.609 and 5-fold cross-validation on the full training dataset (0.629±0.003)",
+    "self_reported_metrics": {
+      "f1": 0.57,
+      "auroc": 0.64,
+      "sensitivity": "not reported",
+      "specificity": "not reported",
+      "accuracy": 0.46,
+      "other": "Table 1 metrics ('Ours') are measured on a 10% hold-out validation split of the training data: AUPRC 0.96, Fβ 0.61, Gβ 0.37, Challenge score 0.64. Official Challenge scores: validation 0.609, full test 0.437, 5-fold CV on full training set 0.629±0.003. Leave-one-domain-out (CPSC/CPSC-Extra/PTB-XL/G12EC) evaluation: 0.352 with adversarial domain generalization vs. 0.343 without."
+    }
+  },
+
+  "model": {
+    "architecture_family": "Hybrid",
+    "architecture_details": "Two parallel 1D CNN branches — one with larger convolution kernels for coarse features, one with smaller kernels for fine features — each followed by max pooling and a bidirectional LSTM (128 units). The concatenated feature vectors plus age/sex attributes feed (1) a gradient-reversal layer into a 2-layer MLP domain classifier (4 domains: CPSC, CPSC-Extra, PTB-XL, G12EC) for adversarial domain generalization, and (2) 27 separate binary sigmoid classifiers (one per scored class), thresholded via grid search maximizing the challenge score.",
+    "key_novelty": "Adversarial multi-source domain generalization: a gradient-reversal domain classifier is trained jointly with the CNN-BiLSTM feature extractor to make learned features invariant across the different source ECG databases (treated as distinct 'domains'), combined with a custom class-weighted multi-label loss derived from the challenge's own reward/misclassification-penalty matrix."
+  },
+
+  "input": {
+    "leads_used": "12",
+    "signal_length_window": "Fixed-length input window; shorter signals randomly padded and longer signals randomly cropped during training (with occasional additional cropping/padding to vary effective length as an augmentation)",
+    "sampling_rate": "250 Hz (resampled)",
+    "preprocessing": "Resampled to 250 Hz and normalized by a constant scale; records without any of the 27 scored labels excluded from training; no explicit denoising filter applied — instead noise addition/removal is used as a data augmentation technique to increase robustness"
+  },
+
+  "data": {
+    "training_datasets": "Official Challenge 2020 training data; for the domain-generalization experiment, CPSC, CPSC-Extra, PTB-XL (10k-sample subset used to avoid dataset dominance), and G12EC were treated as four separate domains in a leave-one-domain-out evaluation; 5% of training data held out for validation (half for threshold tuning, half for model selection)",
+    "class_imbalance_handling": "Custom class-weighted binary cross-entropy loss using an importance/weight matrix derived from the challenge's reward matrix (Mw = 1 − W_reward + α·I); for multi-label records, the element-wise minimum across the corresponding rows of the weight matrix is used",
+    "augmentation_techniques": "Random ECG padding/cropping; randomly adding or filtering low- and high-frequency noise components; low-probability random substitution of a lead's signal with zeros or low-frequency noise; random shuffling of lead order; random inversion of one or more leads; random band-pass filtering; random amplitude scaling or offset"
+  },
+
+  "training": {
+    "loss_function": "Per-class weighted binary cross-entropy across 27 binary classifiers (weights derived from the challenge reward matrix), summed with an adversarial domain-classification cross-entropy loss from a gradient-reversal layer (total loss L = L_C + λ·L_D)",
+    "optimizer": "not reported",
+    "cross_validation_strategy": "5-fold cross-validation on the full training dataset; additionally, leave-one-domain-out evaluation across CPSC, CPSC-Extra, PTB-XL, and G12EC treated as 4 domains",
+    "hardware": "not reported"
+  },
+
+  "contribution": {
+    "summary": "Combines a dual-branch (fine/coarse-kernel) CNN-BiLSTM feature extractor with adversarial multi-source domain generalization and extensive data augmentation, treating each source database as a distinct domain to improve generalization to the unseen test set; placed 5th of 41 teams in the official ranking.",
+    "code_available": "not reported",
+    "code_url": "not reported"
+  }
+}

@@ -1,0 +1,51 @@
+{
+  "paper_id": "CinC2020-198",
+  "team_name": "Pink Irish Hat",
+  "authors_affiliation": "Halla Sigurthorsdottir, Jerome Van Zaen, Ricard Delgado-Gonzalo, Mathieu Lemay — Swiss Center for Electronics and Microtechnology (CSEM), Neuchatel, Switzerland",
+
+  "result": {
+    "official_challenge_metric_score": 0.167,
+    "official_rank": 24,
+    "evaluation_split": "official hidden test set (full test set score, following official ranking of 24th out of 41)",
+    "self_reported_metrics": {
+      "f1": "not reported",
+      "auroc": "not reported",
+      "sensitivity": "not reported",
+      "specificity": "not reported",
+      "accuracy": "not reported",
+      "other": "Challenge score of 0.511 on the hidden validation set (with optimized threshold 0.3 and TTA); local validation score progression: 0.522 baseline, 0.546 with TTA, 0.573 with optimized threshold; training set score 0.451. Submitting with default threshold 0.5 on hidden validation gave only 0.313."
+    }
+  },
+
+  "model": {
+    "architecture_family": "Hybrid",
+    "architecture_details": "Convolutional recurrent neural network (CRNN): convolutional block of 5 mini-blocks (3 conv1d layers each, ReLU, skip connections, dropout, ~15 conv layers total, optimized to 16-32-64 filters per mini-block) with global average pooling, feeding a bi-directional GRU (128 hidden units) with input/recurrent dropout, followed by an attention-with-context layer, batch normalization, and a final dense sigmoid layer for multi-label class probabilities.",
+    "key_novelty": "Combines a multi-scale 1D convolutional feature extractor with a bidirectional GRU + hierarchical attention-with-context aggregator over sliding windows, then applies test-time augmentation (10 offset variants averaged) and a tuned decision threshold to improve robustness under the challenge's hardware constraints."
+  },
+
+  "input": {
+    "leads_used": "8 (12-lead recordings with leads III, aVR, aVL, and aVF excluded as redundant)",
+    "signal_length_window": "Sliding windows over variable-length recordings; random start offset sampled per presentation for augmentation; 10 offsets used at inference for test-time augmentation",
+    "sampling_rate": "Resampled to 257 Hz (the lowest of the dataset's native rates of 257/500/1000 Hz); 100 Hz used during hyperparameter search for efficiency",
+    "preprocessing": "High-pass filter with 0.5 Hz cutoff to remove baseline drift on long recordings; resampling to 257 Hz; per-lead normalization by standard deviation computed over the training set"
+  },
+
+  "data": {
+    "training_datasets": "Official challenge training data, split 80%/20% into local training and local validation sets, stratified by source dataset and the least common label per recording; no external datasets mentioned",
+    "class_imbalance_handling": "Grouped 111 possible diagnoses into the 27 scored classes plus one aggregated 'negative' class; mapped SVPB/VPB to PAC/PVC as equivalent; tested (but did not adopt, since none improved performance) focal loss, oversampling, MLSMOTE, and an ensemble of binary/multi-label models",
+    "augmentation_techniques": "Random offset for the start of the sliding window at training time; test-time augmentation (TTA) using 10 different input offsets averaged at inference"
+  },
+
+  "training": {
+    "loss_function": "Binary cross-entropy",
+    "optimizer": "Nadam (Nesterov Adam) with learning rate reduced to 1e-4, selected after comparing SGD, Adam, AMSGrad, and Nadam",
+    "cross_validation_strategy": "Single 80/20 stratified train/local-validation split (not k-fold); epoch with highest local validation score selected as final model; extensive grid search over filters, dropout rates, and decision threshold",
+    "hardware": "not reported (paper notes the challenge imposed hardware limitations that excluded several higher-capacity configurations, e.g. >=64 filters/layer, from being submittable)"
+  },
+
+  "contribution": {
+    "summary": "Adapts a convolutional-recurrent architecture (CNN feature extractor + bidirectional GRU with attention) for 12-lead ECG multi-label classification, systematically tuning optimizer, filter count, dropout, and decision threshold, and showing test-time augmentation and threshold tuning meaningfully improve the challenge score under hardware constraints.",
+    "code_available": "not reported",
+    "code_url": "not reported"
+  }
+}

@@ -1,0 +1,51 @@
+{
+  "paper_id": "CinC2020-217",
+  "team_name": "Whitaker's Lab",
+  "authors_affiliation": "Garrett Perkins, Chase McGlinn, Bradley M. Whitaker — Montana State University, Bozeman, MT, USA; Muhammad Rizwan — University of Management and Technology, Lahore, Pakistan",
+
+  "result": {
+    "official_challenge_metric_score": "not reported",
+    "official_rank": "not reported",
+    "evaluation_split": "Internal 3-way split of the original (pre-update) Challenge training data only: 25% to train feature-extraction models (PCA, sparse coding), 50% to train the random-forest classifier, 25% held out for validation; authors state 'we were unable to rank and score in the test set' and were unable to train on the full/updated Challenge dataset",
+    "self_reported_metrics": {
+      "f1": 0.002,
+      "auroc": 0.511,
+      "sensitivity": "not reported",
+      "specificity": "not reported",
+      "accuracy": "not reported",
+      "other": "Table 1 (Training / Validation, on internal holdout splits, not the official hidden test set): AUROC 0.476/0.511, AUPRC 0.134/0.054, Accuracy 0.238/'219' (as printed — likely a decimal typo in the source table, so left out of the 'accuracy' field above), F-measure 0.078/0.002, F-beta 0.108/0.002, G-beta 0.044/0.001, unofficial Challenge score 0.216/-0.744. Authors explicitly caution these validation numbers are 'likely to be over-optimistic.'"
+    }
+  },
+
+  "model": {
+    "architecture_family": "Ensemble",
+    "architecture_details": "Random forest classifier (8 estimators, max depth 2, Gini criterion, hyperparameters chosen via cross-validated grid/random search) applied to a 1220-length feature vector per 12-lead ECG: 20 PCA-reduced statistical features (mean, median, std, variance, skewness, kurtosis of R-peaks and RR-intervals, 12 stats x 12 leads reduced from 144 to 20 via PCA) concatenated with 1200 sparse-coding features (100 per lead from a shared dictionary of size 100, sparsity parameter 5, of which only ~60 are nonzero) derived from the magnitude spectrum of an 8192-point FFT of each lead.",
+    "key_novelty": "Applies sparse coding to the frequency-domain (FFT) representation of each ECG lead as an unsupervised feature-extraction step, and introduces a three-way (25%/50%/25%) data split that separates the data used to train unsupervised feature extractors, the supervised classifier, and validation, to reduce overfitting risk from reusing data across both learning stages."
+  },
+
+  "input": {
+    "leads_used": "12",
+    "signal_length_window": "Variable-length recordings for R-peak/RR-interval statistics; frequency-domain features derived from an 8192-point FFT (~30 s), with longer signals truncated and shorter signals zero-padded",
+    "sampling_rate": "not reported (native per-database Challenge sampling rates used; FFT frequency axis referenced up to 300 Hz for the 4096-sample half-spectrum)",
+    "preprocessing": "Not-a-Number (NaN) values replaced with zeros; R-peak detection and RR-interval computation per lead; statistical feature standardization prior to PCA; magnitude-spectrum FFT computation per lead prior to sparse coding"
+  },
+
+  "data": {
+    "training_datasets": "Official Challenge training data only (originally posted version for the reported results); no external datasets used; the entire unused portion of the CPSC2018 subset was placed in the holdout validation set specifically to test generalization across clinical sites; authors note they were unable to train on the full/updated Challenge dataset",
+    "class_imbalance_handling": "not reported",
+    "augmentation_techniques": "not reported"
+  },
+
+  "training": {
+    "loss_function": "not reported (random forest uses Gini impurity as the split criterion, not a trained loss function)",
+    "optimizer": "not reported (not a gradient-based model)",
+    "cross_validation_strategy": "Cross-validated grid/random search used to select random forest hyperparameters; a disjoint three-way data split (25% feature-extraction training / 50% classifier training / 25% holdout validation) used instead of standard k-fold CV, with the unused CPSC2018 data reserved entirely for the holdout set",
+    "hardware": "not reported"
+  },
+
+  "contribution": {
+    "summary": "Proposes sparse coding over FFT-derived frequency features as an ECG feature-extraction technique and a three-way data-splitting scheme (separating feature-extraction, classifier training, and validation data) to reduce overfitting, though the team was unable to submit a working entry to the official hidden test set.",
+    "code_available": "not reported",
+    "code_url": "not reported"
+  }
+}

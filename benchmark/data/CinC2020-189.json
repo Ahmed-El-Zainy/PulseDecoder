@@ -1,0 +1,51 @@
+{
+  "paper_id": "CinC2020-189",
+  "team_name": "BUTTeam",
+  "authors_affiliation": "Tomas Vicar, Jakub Hejc, Petra Novotna, Marina Ronzhina, Oto Janousek; Department of Biomedical Engineering, Brno University of Technology, Brno, Czech Republic",
+
+  "result": {
+    "official_challenge_metric_score": 0.202,
+    "official_rank": 21,
+    "evaluation_split": "official hidden test set (full test set, out of 40 teams in the official ranking); challenge validation score was 0.696",
+    "self_reported_metrics": {
+      "f1": "not reported",
+      "auroc": "not reported",
+      "sensitivity": "not reported",
+      "specificity": "not reported",
+      "accuracy": "not reported",
+      "other": "Dice Coefficient (DC): 0.571 on training hold-out subset, 0.522 on validation data, 0.277 on full test set. Challenge Metric (CM) per hidden database: Database 1 = 0.892 (same-source data, best of 40 teams), Database 2 = 0.235, Database 3 = 0.104 (different-source data)."
+    }
+  },
+
+  "model": {
+    "architecture_family": "ResNet",
+    "architecture_details": "1D ResNet-style CNN feature extractor with 6 residual blocks (3 convolutional layers each, kernel size 3), local skip connections plus an additional global skip connection from the input layer, followed by Global Max Pooling and a final classification layer of 24 independent fully-connected binary classifiers (termed 'BUTT' - Binary Units Training Technique) with sigmoid outputs.",
+    "key_novelty": "Extends a 1D ResNet with a global skip connection to the input, and derives a custom differentiable loss function directly from the official Challenge weighted-confusion-matrix metric, combined with per-class Bayesian-optimized decision thresholds."
+  },
+
+  "input": {
+    "leads_used": "12",
+    "signal_length_window": "variable length; zero-padded to equal length for mini-batch training, with zero-padded portion cropped out immediately after the ResNet layers (before pooling) to avoid distorting pooled features; long Holter recordings split into segments at inference",
+    "sampling_rate": "resampled to 125 Hz (source data at 257, 500, or 1000 Hz)",
+    "preprocessing": "Time-domain resampling to a fixed 125 Hz via linear interpolation combined with decimation and an anti-aliasing FIR filter; zero-padding for batch formation."
+  },
+
+  "data": {
+    "training_datasets": "43,101 labeled recordings from the 6 official Challenge training databases; no external data reported",
+    "class_imbalance_handling": "Weighted cross-entropy (WCE) loss with per-class positive/negative weights inversely proportional to class frequency",
+    "augmentation_techniques": "Random ±10% stretch along the temporal axis (p=0.8) and ±20% amplification along the voltage axis (p=0.8); other tested preprocessing augmentations (baseline drift removal, temporal shifting, noise addition, simulated electrode switch) had no measurable effect."
+  },
+
+  "training": {
+    "loss_function": "Two-phase training: weighted cross-entropy (WCE) in the first learning-rate cycle, then a custom differentiable 'CM Loss' derived from the official Challenge metric's weighted confusion matrix in the second cycle",
+    "optimizer": "Adam (β1=0.9, β2=0.999) with decoupled weight decay (λ=1e-5), initial learning rate 1e-3, two-cycle schedule decaying by 0.1x every 30 epochs per cycle, mini-batch size 32; Stochastic Weight Averaging applied across epochs",
+    "cross_validation_strategy": "10% random hold-out subset of training data for internal validation (no k-fold CV reported); final model is a majority-vote ensemble of 3 bootstrap-aggregated models each fit on a 90% subset of training data",
+    "hardware": "not reported"
+  },
+
+  "contribution": {
+    "summary": "Proposes a 1D ResNet with local and global skip connections and per-class binary classification heads ('BUTT'), trained using a custom loss function derived directly from the official Challenge metric plus Bayesian-optimized class-specific thresholds, but shows this approach generalizes poorly to ECG data from sources unseen in training.",
+    "code_available": true,
+    "code_url": "https://github.com/tomasvicar/BUTTeam"
+  }
+}

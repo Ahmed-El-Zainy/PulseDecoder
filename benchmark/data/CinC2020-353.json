@@ -1,0 +1,51 @@
+{
+  "paper_id": "CinC2020-353",
+  "team_name": "LaussenLabs",
+  "authors_affiliation": "Sebastian D Goodfellow et al., Department of Critical Care Medicine, The Hospital for Sick Children / University of Toronto, Canada",
+
+  "result": {
+    "official_challenge_metric_score": -0.406,
+    "official_rank": "not reported",
+    "evaluation_split": "Official hidden test set: submission failed to run within the competition time limit, so the recorded score of -0.406 is a default/error score (equivalent to predicting all negatives), not a true measure of model performance. Model's genuine performance is reflected instead in the 6-fold cross-validation on the full training data (CV mean 0.630, min 0.614, max 0.644).",
+    "self_reported_metrics": {
+      "f1": "not reported",
+      "auroc": "not reported",
+      "sensitivity": "not reported",
+      "specificity": "not reported",
+      "accuracy": "not reported",
+      "other": "6-fold cross-validation challenge metric: mean 0.630, min 0.614, max 0.644, stdev 0.010"
+    }
+  },
+
+  "model": {
+    "architecture_family": "CNN",
+    "architecture_details": "15-channel input (12 ECG leads + 3 engineered r-peak/p-wave/t-wave likelihood feature channels). A stem of two 1D conv+batchnorm+ReLU+max-pool+dropout blocks downsamples the 19,000-sample input to 4,750 samples. This feeds a series of 8 non-causal WaveNet-style dilated residual blocks (dilation rates 1 to 256) with gated tanh/sigmoid activations and summed skip connections. Output conv layers (same structure as the stem) globally average-pool in time and feed a 27-unit dense layer with sigmoid activation, whose output is squared before thresholding. An auxiliary decoder branch (two upsampling deconvolution layers) reconstructs the original 19000x15 input as a secondary training objective.",
+    "key_novelty": "Combines engineered ECG fiducial-point (r-peak/p-wave/t-wave) features as extra input channels with a modified non-causal WaveNet residual architecture, an auxiliary signal-reconstruction decoder, a squared-sigmoid output tuned to the competition's false-negative-sensitive metric, and post-hoc class-activation-map inspection to surface likely mislabeled training data."
+  },
+
+  "input": {
+    "leads_used": "12",
+    "signal_length_window": "19s fixed window (19,000 samples at 1000Hz), zero-padded if shorter, clipped after 19s if longer",
+    "sampling_rate": "1000 Hz (upsampled from original recordings sampled at 257, 500, or 1000 Hz)",
+    "preprocessing": "Resampled to 1000Hz via SciPy resample; amplitude scaled by median R-peak amplitude on Lead I (via BioSPPy) when reliable r-peak detection was possible, otherwise per-lead median subtraction and division by the standard deviation across all 12 leads; 3 engineered feature channels (r-peak, p-wave, t-wave likelihood via kernel density estimation) appended as additional input channels"
+  },
+
+  "data": {
+    "training_datasets": "All official Challenge training data, no external data; used for 6-fold cross-validation",
+    "class_imbalance_handling": "Sigmoid output squared to increase penalty on false negatives relative to false positives, aligned with the competition metric's sensitivity; no explicit class-reweighting scheme reported",
+    "augmentation_techniques": "Synthetic noise added during training: Gaussian noise, high-frequency/low-amplitude oscillations, baseline wandering, and large-amplitude transient pulses; random amplitude scaling factor; random heart-rate perturbation with resampling (applied only when the label was not heart-rate dependent)"
+  },
+
+  "training": {
+    "loss_function": "Sum of binary cross-entropy (classifier output) and mean squared error (decoder reconstruction output)",
+    "optimizer": "Adam, initial learning rate 1e-3, batch size 128, with ReduceLROnPlateau decay schedule (patience 1)",
+    "cross_validation_strategy": "6-fold cross-validation using the iterative-stratification package for multilabel stratified splitting; trained up to 100 epochs with early stopping (patience 10); inference used majority vote across the 6 fold models",
+    "hardware": "not reported"
+  },
+
+  "contribution": {
+    "summary": "Combines raw 12-lead ECG with engineered r-peak/p-wave/t-wave likelihood features in a modified non-causal WaveNet residual network with an auxiliary reconstruction decoder, using class-activation maps to flag likely mislabeled training data; achieved a CV score of 0.63 but could not complete a valid test-set submission before the deadline.",
+    "code_available": true,
+    "code_url": "github.com/Seb-Good/physionet-challenge-2020"
+  }
+}

@@ -1,0 +1,51 @@
+{
+  "paper_id": "CinC2020-328",
+  "team_name": "DSAIL_SNU",
+  "authors_affiliation": "Seonwoo Min, Hyeongrok Han, Minji Seo, Sungroh Yoon (Seoul National University); Hyun-Soo Choi (T3K, SK Telecom); Jin-Kook Kim, Junsang Park, Sunghoon Jung (HUINNO Co., Ltd.); Il-Young Oh (Seoul National University Bundang Hospital); Byunghan Lee (Seoul National University of Science and Technology) — all South Korea",
+
+  "result": {
+    "official_challenge_metric_score": 0.42,
+    "official_rank": 6,
+    "evaluation_split": "official hidden full test set (0.420 challenge score, 6th place); also 10-fold cross-validation on training data (0.695 challenge score for the final WRN-18-2 model)",
+    "self_reported_metrics": {
+      "f1": "not reported",
+      "auroc": "not reported",
+      "sensitivity": "not reported",
+      "specificity": "not reported",
+      "accuracy": "not reported",
+      "other": "10-fold CV ablation results for final WRN-18-2 model: F2 = 0.696, G2 = 0.448, challenge score = 0.695. Per-database challenge scores on the full hidden test set (Table 3): DB1 = 0.688, DB2 = 0.654, DB3 = 0.228."
+    }
+  },
+
+  "model": {
+    "architecture_family": "ResNet",
+    "architecture_details": "18-layer Wide Residual Network (WRN-18-2): an input stem, four stages of N residual blocks (widening factor k=2), and an output stem. Each residual block uses two pre-activation convolutions with batch normalization, ReLU, and dropout between the convolutions, with 2x down-sampling at the first layer of each stage. Variable-length recordings are handled via a sliding window (4,096 samples, ~4s, with 512-sample/~1s overlap): each window is fed through the model up to the max-pooling layer, intermediate outputs are concatenated and max-pooled into a fixed-length vector, then passed through a final dense layer with sigmoid activation for multi-label output. Final model is an ensemble of 10 WRN-18-2 models from 10-fold cross-validation.",
+    "key_novelty": "Introduces a 'bag of tricks' layered onto a wide ResNet backbone: a confusion-weighted binary cross-entropy (CoW-BCE) loss derived directly from the Challenge's own reward/confusion matrix, a warmup + cosine-annealing learning-rate schedule, Manifold Mixup applied to hidden representations (to handle variable-length recordings), class-specific decision thresholds, and a 10-model ensemble — each shown empirically to incrementally improve the official challenge score."
+  },
+
+  "input": {
+    "leads_used": "12",
+    "signal_length_window": "Variable-length recordings processed via a sliding window of 4,096 samples (~4 seconds) with 512-sample (~1 second) overlap",
+    "sampling_rate": "500 Hz (recordings resampled to 500 Hz when necessary)",
+    "preprocessing": "50Hz and 60Hz notch filters to remove electrical noise; per-recording standardization (remove mean, scale to unit variance); resampling to 500 Hz where needed"
+  },
+
+  "data": {
+    "training_datasets": "All 6 official Challenge 2020 training datasets (PTB-XL, Georgia, CPSC, CPSC-Extra, PTB, StPetersburg); PTB and StPetersburg excluded due to long average recording length, and recordings without any positive scored label removed, leaving 37,619 recordings split into 10 folds via iterative stratification; no external data used",
+    "class_imbalance_handling": "Confusion-weighted binary cross-entropy (CoW-BCE) loss that down-weights the contribution of misdiagnoses between clinically similar classes, based on the Challenge's own reward matrix; iterative stratification used for the 10-fold split to preserve per-label positive-example distribution",
+    "augmentation_techniques": "Manifold Mixup — linear interpolation of hidden (intermediate) representations and labels of pairs of training examples, with mixing coefficient λ ~ Beta(0.2, 0.2)"
+  },
+
+  "training": {
+    "loss_function": "Confusion-weighted binary cross-entropy (CoW-BCE), a modification of standard BCE that down-weights misdiagnoses with high reward-matrix similarity",
+    "optimizer": "Adam; learning rate 0.001 with a warmup (10 epochs) + cosine-annealing schedule over 100 total training epochs; batch size 128; L2 weight decay 0.0005; dropout probability 0.3",
+    "cross_validation_strategy": "10-fold cross-validation with iterative stratification; final submitted model is an ensemble of the 10 fold-specific models, averaging both prediction scores and class-specific decision thresholds",
+    "hardware": "NVIDIA V100 GPU"
+  },
+
+  "contribution": {
+    "summary": "Systematically evaluates a collection of small refinements (filtering/scaling, an LR warmup+cosine schedule, a novel confusion-weighted BCE loss tied to the Challenge's reward matrix, Manifold Mixup, class-specific thresholds, and model ensembling) on top of a wide ResNet backbone, showing each refinement incrementally and cumulatively improves 12-lead ECG classification performance, reaching 0.695 challenge score in cross-validation and 0.420 (6th place) on the official hidden test set.",
+    "code_available": "not reported",
+    "code_url": "not reported"
+  }
+}

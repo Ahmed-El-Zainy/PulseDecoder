@@ -1,0 +1,51 @@
+{
+  "paper_id": "CinC2020-135",
+  "team_name": "Leicester-Fox",
+  "authors_affiliation": "Zheheng Jiang, Tiago P Almeida, Fernando S Schlindwein, G Andre Ng, Huiyu Zhou, Xin Li (University of Leicester, Leicester, UK)",
+
+  "result": {
+    "official_challenge_metric_score": -0.012,
+    "official_rank": 34,
+    "evaluation_split": "official hidden full test set (abstract: validation score 0.395, full test score -0.012, rank 34/41)",
+    "self_reported_metrics": {
+      "f1": 0.603,
+      "auroc": "not reported",
+      "sensitivity": "not reported",
+      "specificity": "not reported",
+      "accuracy": "not reported",
+      "other": "Internal 5-fold cross-validation ablation (Table 1), not the hidden test set: 1DCNN Challenge Metric 0.503 / F1 0.481; +Res-Blocks 0.554 / 0.526; +Bi-GRU 0.582 / 0.564; +GCN + class-aware BCE (final model) 0.627 / 0.603. Official Challenge validation-phase score reported separately as 0.395."
+    }
+  },
+
+  "model": {
+    "architecture_family": "Hybrid",
+    "architecture_details": "ECG representation network: 1D convolutional layer + 16 residual blocks (2 conv layers each, filter width 16, filters starting at 32 and doubling every 4th block, stride-2 subsampling every 2nd block, BatchNorm + ReLU + dropout 0.2) followed by a bi-directional GRU layer to extract temporal features; a 3-layer Graph Convolutional Network (GCN) then models inter-label correlations, using a correlation matrix built from label co-occurrence conditional probabilities; final classification via dot product of ECG features and GCN label embeddings, trained with a proposed class-aware binary cross-entropy loss.",
+    "key_novelty": "Combines a CNN+bi-GRU ECG feature extractor with a Graph Convolutional Network that explicitly models label co-occurrence/correlation structure (via a conditional-probability adjacency matrix) for multi-label classification, trained jointly with a novel class-aware BCE loss."
+  },
+
+  "input": {
+    "leads_used": "12",
+    "signal_length_window": "variable length; recordings shorter than 18 seconds were zero-padded; network outputs one prediction every 512 samples",
+    "sampling_rate": "500 Hz (all recordings resampled to this rate)",
+    "preprocessing": "Resampling to 500 Hz; zero-padding of recordings shorter than 18s"
+  },
+
+  "data": {
+    "training_datasets": "Official PhysioNet/CinC 2020 Challenge datasets: China Physiological Signal Challenge 2018 (10330 recordings), St. Petersburg INCART 12-lead Arrhythmia Database (75 recordings), PTB (Physikalisch Technische Bundesanstalt, 22386 recordings), and Georgia 12-Lead ECG Challenge Database (10344 recordings); 25 classes used (C=25)",
+    "class_imbalance_handling": "not reported",
+    "augmentation_techniques": "not reported"
+  },
+
+  "training": {
+    "loss_function": "Proposed class-aware binary cross-entropy loss (incorporates GCN label-embedding dot product with ECG features), compared against standard BCE in ablations",
+    "optimizer": "Adam (stochastic gradient descent variant), learning rate 0.001, reduced by factor of 10 when validation loss plateaus for 2 consecutive epochs; batch size 32; 100 epochs",
+    "cross_validation_strategy": "5-fold cross-validation on the training set for ablation experiments",
+    "hardware": "not reported"
+  },
+
+  "contribution": {
+    "summary": "Proposes an end-to-end multi-label ECG classifier that pairs a CNN+bi-GRU feature extractor with a Graph Convolutional Network encoding label co-occurrence correlations, trained via a new class-aware BCE loss, showing incremental gains from residual blocks, bi-GRU, and GCN in ablation.",
+    "code_available": "not reported",
+    "code_url": "not reported"
+  }
+}

@@ -1,0 +1,51 @@
+{
+  "paper_id": "CinC2020-462",
+  "team_name": "BitScattered",
+  "authors_affiliation": "Philip A. Warrick (PeriGen Inc., Montreal), Vincent Lostanlen (New York University), Michael Eickenberg (Flatiron Institute, New York), Joakim Andén (KTH Royal Institute of Technology), Masun Nabhan Homsi (Helmholtz Centre for Environmental Research, UFZ, Leipzig)",
+
+  "result": {
+    "official_challenge_metric_score": "not reported",
+    "official_rank": "not reported",
+    "evaluation_split": "10-fold cross-validation on combined CPSC2018 + PTB-XL training data (90%/10% train/test split per fold, with 10% of training used for validation); authors explicitly state they were unable to complete a working Docker submission and therefore could not obtain a score on the official hidden test set",
+    "self_reported_metrics": {
+      "f1": "not reported",
+      "auroc": "not reported",
+      "sensitivity": "not reported",
+      "specificity": "not reported",
+      "accuracy": "not reported",
+      "other": "Challenge metric (s_normalized, as defined in the Challenge overview paper) of 0.536 ± 0.012 (mean ± SD test-fold score over 10-fold cross-validation); training fold mean 0.569 ± 0.014, validation fold mean 0.540 ± 0.016. Authors caution this may be over-optimistic since it is not the official hidden test set score."
+    }
+  },
+
+  "model": {
+    "architecture_family": "Hybrid",
+    "architecture_details": "Three-stage differentiable pipeline: (1) a non-trainable time scattering transform (ST) per ECG channel using Morlet wavelets (Q=1, J=11, center frequency 200 Hz), producing 75 scattering paths (12 first-order + 63 second-order) with an asinh compressive nonlinearity, implemented in Python via the Kymatio library; (2) a depthwise separable convolution (DSC) layer (N=P=66, ReLU activation) combining scattering coefficients across the 12 leads; (3) two stacked bidirectional LSTM (BiLSTM) layers (100 hidden units each) followed by a dense sigmoid output layer for multilabel classification of 24 target classes (27 arrhythmias with 3 equivalent-class pairs collapsed).",
+    "key_novelty": "First fully Python-based implementation (via the new Kymatio library) of a scattering transform combined with a depthwise separable convolution and BiLSTM network for ECG arrhythmia classification, avoiding the MATLAB/Python split used in prior scattering-transform work."
+  },
+
+  "input": {
+    "leads_used": "12",
+    "signal_length_window": "30 s learning-batch window (ST paths for longer sequences truncated at 30 s; padding target applied for recordings shorter than the batch size)",
+    "sampling_rate": "500 Hz (ECG acquisition rate); scattering transform discretized at a Nyquist rate of 8 Hz",
+    "preprocessing": "Analog-to-digital gain (ADG) from input headers applied to obtain physical (mV) units; channel-wise scattering transform with asinh compressive nonlinearity applied to scattering magnitudes"
+  },
+
+  "data": {
+    "training_datasets": "CPSC2018 (public CPSC training set + unused CPSC2 data) and PTB-XL, totaling 32,167 of the 43,101 available Challenge recordings (~75%); St. Petersburg and Georgia (G12EC) datasets were tried but training did not converge on them so they were excluded from cross-validation",
+    "class_imbalance_handling": "not reported",
+    "augmentation_techniques": "not reported"
+  },
+
+  "training": {
+    "loss_function": "Binary cross-entropy (multilabel)",
+    "optimizer": "Adam",
+    "cross_validation_strategy": "10-fold cross-validation; 90%/10% train/test split with 10% of the training set held out for validation and 20-epoch early stopping",
+    "hardware": "Machine with 32 GB system memory and two GPUs (12 GB memory each), using TensorFlow's MirroredStrategy to distribute training across the two GPUs; ~18 hours training time per fold"
+  },
+
+  "contribution": {
+    "summary": "Combines a fixed (non-trainable) scattering transform with a learned depthwise separable convolution and bidirectional LSTM, all implemented end-to-end in Python via the Kymatio library, to classify 27 arrhythmia classes from 12-lead ECGs, but the team was unable to score on the official hidden test set due to submission/Docker issues.",
+    "code_available": "not reported",
+    "code_url": "not reported"
+  }
+}
