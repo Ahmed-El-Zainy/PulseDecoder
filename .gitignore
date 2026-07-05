@@ -7,9 +7,9 @@ __pycache__/
 *.so
 *.pdf
 /papers
-/benchmarks/fonts/
+/fonts
 .DS_Store
-
+*.b64
 # Distribution / packaging
 .Python
 build/
