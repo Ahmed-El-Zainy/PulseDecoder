@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ECGNet — Documentation</title>
+<style>
+  :root{
+    --bg:#f2f5f3;--surface:#ffffff;--surface-2:#eef2f0;--border:#d7ded9;
+    --text:#0e1a16;--muted:#566a62;--faint:#8b9c94;--accent:#00a866;--accent-soft:#d8f2e6;
+    --mono:ui-monospace,"SF Mono","Menlo","Cascadia Code","Roboto Mono",monospace;
+    --sans:system-ui,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{--bg:#0b1113;--surface:#121b1e;--surface-2:#172226;--border:#23323a;
+      --text:#e6efec;--muted:#93a7a0;--faint:#6a7d77;--accent:#00e08a;--accent-soft:#10352a;}
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:var(--sans);line-height:1.55;-webkit-font-smoothing:antialiased;}
+  .wrap{max-width:820px;margin:0 auto;padding:64px 24px 80px;}
+  .eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--accent);margin:0 0 14px;}
+  h1{font-size:clamp(28px,5vw,42px);font-weight:800;letter-spacing:-.02em;line-height:1.06;margin:0 0 14px;}
+  .lede{font-size:17px;color:var(--muted);max-width:60ch;margin:0 0 40px;}
+  .cards{display:grid;gap:16px;}
+  a.card{display:block;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:22px 24px;text-decoration:none;color:inherit;transition:border-color .15s,transform .15s;}
+  a.card:hover{border-color:var(--accent);transform:translateY(-2px);}
+  a.card .n{font-family:var(--mono);font-size:12px;color:var(--accent);letter-spacing:.06em;}
+  a.card h2{font-size:20px;margin:8px 0 6px;font-weight:700;}
+  a.card p{margin:0;font-size:14.5px;color:var(--muted);}
+  a.card .go{margin-top:12px;font-family:var(--mono);font-size:13px;color:var(--accent);}
+  .meta{margin-top:44px;padding-top:22px;border-top:1px solid var(--border);font-size:13px;color:var(--faint);}
+  .meta code{font-family:var(--mono);color:var(--muted);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="eyebrow">PhysioNet / CinC 2020 · 12-lead ECG classification</p>
+  <h1>ECGNet — Documentation</h1>
+  <p class="lede">Reference pages for the SE-ResNet + Transformer model in <code style="font-family:var(--mono)">my_model/</code>, synthesized from the top-10 challenge solutions in this repository.</p>
+
+  <div class="cards">
+    <a class="card" href="architectures-overview.html">
+      <span class="n">01 · SURVEY</span>
+      <h2>Architectures overview</h2>
+      <p>Taxonomy graph clustering all ten teams into six families, a card per team, the patterns that recur among the winners, and the synthesized model blueprint.</p>
+      <div class="go">Open →</div>
+    </a>
+    <a class="card" href="model-spec.html">
+      <span class="n">02 · SPEC</span>
+      <h2>Model spec &amp; simulator</h2>
+      <p>Full block diagram (stem branches, SE-block and Transformer internals, edge shapes), component deep-dives, the workflow, every hyperparameter, an accurate parameter/shape simulator, expected results, and the enhancement map.</p>
+      <div class="go">Open →</div>
+    </a>
+  </div>
+
+  <p class="meta">Open any file directly in a browser — each is a self-contained page (no server or internet needed). Source model lives in <code>../my_model/</code>.</p>
+</div>
+</body>
+</html>

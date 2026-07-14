@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ECGNet — Model Spec & Simulator</title>
+<style>
+  :root{
+    --bg:#f2f5f3; --surface:#ffffff; --surface-2:#eef2f0; --surface-3:#e7ece9;
+    --border:#d7ded9; --text:#0e1a16; --muted:#566a62; --faint:#8b9c94;
+    --accent:#00a866; --accent-soft:#d8f2e6; --amber:#b8730a; --red:#d13b4a;
+    --cyan:#0f8f9c; --violet:#6a53c4; --grid:rgba(14,26,22,0.06);
+    --mono:ui-monospace,"SF Mono","Menlo","Cascadia Code","Roboto Mono",monospace;
+    --sans:system-ui,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --maxw:1200px;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{--bg:#0b1113;--surface:#121b1e;--surface-2:#172226;--surface-3:#1d2a2f;
+      --border:#23323a;--text:#e6efec;--muted:#93a7a0;--faint:#6a7d77;
+      --accent:#00e08a;--accent-soft:#10352a;--amber:#ffbf5c;--red:#ff6473;
+      --cyan:#3ccdd9;--violet:#a596f0;--grid:rgba(230,239,236,0.05);}
+  }
+  :root[data-theme="light"]{--bg:#f2f5f3;--surface:#ffffff;--surface-2:#eef2f0;--surface-3:#e7ece9;--border:#d7ded9;--text:#0e1a16;--muted:#566a62;--faint:#8b9c94;--accent:#00a866;--accent-soft:#d8f2e6;--amber:#b8730a;--red:#d13b4a;--cyan:#0f8f9c;--violet:#6a53c4;--grid:rgba(14,26,22,0.06);}
+  :root[data-theme="dark"]{--bg:#0b1113;--surface:#121b1e;--surface-2:#172226;--surface-3:#1d2a2f;--border:#23323a;--text:#e6efec;--muted:#93a7a0;--faint:#6a7d77;--accent:#00e08a;--accent-soft:#10352a;--amber:#ffbf5c;--red:#ff6473;--cyan:#3ccdd9;--violet:#a596f0;--grid:rgba(230,239,236,0.05);}
+
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:var(--sans);line-height:1.55;-webkit-font-smoothing:antialiased;}
+  .wrap{max-width:var(--maxw);margin:0 auto;padding:0 24px;}
+  a{color:var(--accent);text-decoration:none;}
+
+  /* nav */
+  nav{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--surface) 88%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--border);}
+  .nav-in{max-width:var(--maxw);margin:0 auto;padding:11px 24px;display:flex;gap:6px 18px;flex-wrap:wrap;align-items:center;}
+  .nav-in .brand{font-family:var(--mono);font-weight:700;font-size:13px;color:var(--accent);letter-spacing:.04em;margin-right:8px;}
+  .nav-in a{font-size:13px;color:var(--muted);}
+  .nav-in a:hover{color:var(--text);}
+
+  header.hero{border-bottom:1px solid var(--border);position:relative;overflow:hidden;}
+  .hero-grid{position:absolute;inset:0;background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:26px 26px;mask-image:linear-gradient(180deg,#000,transparent 92%);-webkit-mask-image:linear-gradient(180deg,#000,transparent 92%);}
+  .hero-in{position:relative;padding:52px 24px 44px;max-width:var(--maxw);margin:0 auto;}
+  .eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--accent);margin:0 0 14px;}
+  h1{font-size:clamp(28px,4.6vw,46px);font-weight:800;letter-spacing:-.02em;line-height:1.05;margin:0 0 14px;max-width:22ch;text-wrap:balance;}
+  .lede{font-size:clamp(15px,1.9vw,18px);color:var(--muted);max-width:64ch;margin:0;}
+  .kpis{display:flex;flex-wrap:wrap;gap:12px;margin-top:26px;}
+  .kpi{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 16px;}
+  .kpi b{display:block;font-family:var(--mono);font-size:20px;letter-spacing:-.01em;}
+  .kpi span{font-size:11.5px;color:var(--faint);text-transform:uppercase;letter-spacing:.08em;}
+
+  section{padding:52px 0;border-bottom:1px solid var(--border);}
+  .kick{font-family:var(--mono);font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--faint);margin:0 0 9px;}
+  h2{font-size:clamp(22px,3.2vw,31px);font-weight:750;letter-spacing:-.015em;margin:0 0 12px;text-wrap:balance;}
+  .sub{color:var(--muted);max-width:70ch;margin:0 0 28px;font-size:15.5px;}
+
+  /* architecture diagram */
+  .diagwrap{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:18px;overflow-x:auto;margin-bottom:26px;}
+  .diag{width:100%;height:auto;min-width:940px;display:block;}
+  .diag .box{fill:var(--surface-2);stroke:var(--border);stroke-width:1.5;}
+  .diag .box.key{fill:var(--accent-soft);stroke:var(--accent);}
+  .diag .box.tf{stroke:var(--violet);}
+  .diag .box.feat{stroke:var(--cyan);}
+  .diag .box.io{fill:var(--surface-3);}
+  .diag .inner{fill:var(--surface);stroke:var(--border);stroke-width:1;}
+  .diag .op{fill:var(--surface-3);stroke:var(--border);stroke-width:1;}
+  .diag .lbl{fill:var(--text);font-family:var(--sans);font-weight:650;font-size:13.5px;}
+  .diag .sm{fill:var(--muted);font-family:var(--sans);font-size:11.5px;}
+  .diag .xs{fill:var(--muted);font-family:var(--sans);font-size:10px;}
+  .diag .shp{fill:var(--cyan);font-family:var(--mono);font-size:11.5px;}
+  .diag .pm{fill:var(--faint);font-family:var(--mono);font-size:10.5px;}
+  .diag .title{fill:var(--accent);font-family:var(--mono);font-size:12px;font-weight:700;}
+  .diag .titlev{fill:var(--violet);}
+  .diag .titlec{fill:var(--cyan);}
+  .diag .edge{stroke:var(--accent);stroke-width:2;fill:none;}
+  .diag .edgev{stroke:var(--violet);stroke-width:1.8;fill:none;}
+  .diag .skip{stroke:var(--amber);stroke-width:1.8;fill:none;stroke-dasharray:5 4;}
+  .diag .lead{stroke:var(--faint);stroke-width:1.2;stroke-dasharray:4 4;fill:none;}
+  .diag .opx{fill:var(--text);font-family:var(--mono);font-size:12px;}
+  .diaglegend{display:flex;flex-wrap:wrap;gap:8px 18px;margin-top:14px;font-size:12.5px;color:var(--muted);}
+  .diaglegend .li{display:flex;align-items:center;gap:7px;}
+  .diaglegend .sw{width:22px;height:12px;border-radius:3px;border:1.5px solid;}
+
+  /* pipeline */
+  .pipe{display:flex;flex-direction:column;gap:0;}
+  .pstage{display:grid;grid-template-columns:130px 1fr 150px;gap:16px;align-items:center;cursor:pointer;border:1px solid var(--border);background:var(--surface);border-radius:12px;padding:13px 16px;transition:border-color .15s,background .15s;}
+  .pstage:hover{border-color:var(--accent);}
+  .pstage.active{border-color:var(--accent);background:color-mix(in srgb,var(--accent-soft) 40%,var(--surface));}
+  .pstage .pname{font-weight:700;font-size:15px;}
+  .pstage .pdesc{font-size:13px;color:var(--muted);}
+  .pstage .pshape{font-family:var(--mono);font-size:12.5px;color:var(--cyan);text-align:right;}
+  .pstage .pbar{height:6px;border-radius:4px;background:var(--surface-3);overflow:hidden;margin-top:6px;}
+  .pstage .pbar i{display:block;height:100%;background:var(--accent);}
+  .pconn{height:16px;width:2px;background:linear-gradient(var(--accent),color-mix(in srgb,var(--accent) 25%,transparent));margin:2px 0 2px 64px;}
+  .detail{margin-top:20px;background:var(--surface-2);border:1px solid var(--border);border-radius:14px;padding:20px 22px;min-height:120px;}
+  .detail h3{margin:0 0 6px;font-size:18px;}
+  .detail .tag{font-family:var(--mono);font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:.08em;}
+  .detail p{margin:10px 0;color:var(--muted);font-size:14.5px;}
+  .detail .row{display:flex;flex-wrap:wrap;gap:10px 26px;margin-top:12px;font-size:13px;}
+  .detail .row div span{color:var(--faint);font-family:var(--mono);font-size:11px;display:block;text-transform:uppercase;letter-spacing:.06em;}
+  .detail .row div b{font-family:var(--mono);font-size:14px;}
+  .detail code{font-family:var(--mono);font-size:12.5px;background:var(--surface-3);padding:2px 6px;border-radius:5px;color:var(--text);}
+
+  /* component grid */
+  .cgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;}
+  .comp{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px;display:flex;flex-direction:column;gap:9px;}
+  .comp .ch{display:flex;justify-content:space-between;align-items:baseline;gap:10px;}
+  .comp h3{margin:0;font-size:16px;}
+  .comp .cls{font-family:var(--mono);font-size:11px;color:var(--violet);}
+  .comp p{margin:0;font-size:13.5px;color:var(--muted);}
+  .comp .io{font-family:var(--mono);font-size:12px;color:var(--cyan);background:var(--surface-2);border:1px solid var(--border);border-radius:7px;padding:7px 10px;}
+  .comp .frm{font-family:var(--mono);font-size:12px;color:var(--text);background:var(--surface-3);border-radius:7px;padding:7px 10px;overflow-x:auto;}
+  .comp .tune{font-size:12.5px;color:var(--amber);border-top:1px dashed var(--border);padding-top:9px;}
+  .comp .tune b{color:var(--amber);}
+
+  /* workflow steps */
+  .flow{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px;}
+  .step{background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:17px;position:relative;}
+  .step .n{font-family:var(--mono);font-size:12px;color:var(--accent);font-weight:700;}
+  .step h4{margin:6px 0 7px;font-size:15px;}
+  .step p{margin:0;font-size:13px;color:var(--muted);}
+  .step .files{margin-top:9px;font-family:var(--mono);font-size:11px;color:var(--faint);}
+  .phase{font-family:var(--mono);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin:22px 0 12px;}
+
+  /* tables */
+  .tw{overflow-x:auto;border:1px solid var(--border);border-radius:12px;}
+  table{border-collapse:collapse;width:100%;min-width:640px;font-size:13.5px;}
+  th,td{text-align:left;padding:10px 14px;border-bottom:1px solid var(--border);vertical-align:top;}
+  th{background:var(--surface-2);font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--faint);font-weight:650;position:sticky;top:0;}
+  td code,.hp{font-family:var(--mono);font-size:12.5px;color:var(--accent);}
+  tbody tr:last-child td{border-bottom:none;}
+  td .up{color:var(--cyan);} td .dn{color:var(--amber);}
+  .grp{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);}
+
+  /* simulator */
+  .sim{display:grid;grid-template-columns:320px 1fr;gap:22px;}
+  @media (max-width:820px){.sim{grid-template-columns:1fr;}}
+  .controls{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px;display:flex;flex-direction:column;gap:15px;align-self:start;}
+  .ctl label{display:block;font-size:12px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.06em;color:var(--faint);margin-bottom:6px;}
+  .ctl .val{color:var(--accent);}
+  .seg{display:flex;flex-wrap:wrap;gap:6px;}
+  .seg button{font-family:var(--mono);font-size:12px;padding:6px 11px;border-radius:8px;border:1px solid var(--border);background:var(--surface-2);color:var(--muted);cursor:pointer;transition:.12s;}
+  .seg button:hover{color:var(--text);}
+  .seg button.on{background:var(--accent);border-color:var(--accent);color:#04150e;font-weight:700;}
+  input[type=range]{width:100%;accent-color:var(--accent);}
+  .out{display:flex;flex-direction:column;gap:16px;}
+  .metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;}
+  .metric{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;}
+  .metric b{font-family:var(--mono);font-size:22px;letter-spacing:-.01em;display:block;}
+  .metric span{font-size:11px;color:var(--faint);text-transform:uppercase;letter-spacing:.06em;}
+  .metric small{font-size:11px;color:var(--muted);font-family:var(--mono);}
+  .gauge{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 18px;}
+  .gauge .track{position:relative;height:34px;border-radius:8px;background:linear-gradient(90deg,var(--red),var(--amber) 35%,var(--cyan) 70%,var(--accent));margin:14px 0 6px;opacity:.85;}
+  .gauge .mk{position:absolute;top:-6px;width:2px;height:46px;background:var(--text);}
+  .gauge .mk::after{content:attr(data-l);position:absolute;top:-16px;left:50%;transform:translateX(-50%);font-family:var(--mono);font-size:10px;white-space:nowrap;color:var(--text);}
+  .gauge .scale{display:flex;justify-content:space-between;font-family:var(--mono);font-size:11px;color:var(--faint);}
+  .shapes{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+  .disc{font-size:12px;color:var(--faint);border-left:3px solid var(--amber);padding:8px 12px;background:var(--surface-2);border-radius:0 8px 8px 0;}
+
+  /* freq chart */
+  .freq{display:flex;flex-direction:column;gap:5px;}
+  .fr{display:grid;grid-template-columns:70px 1fr 62px;gap:10px;align-items:center;font-size:12.5px;}
+  .fr .lbl{font-family:var(--mono);color:var(--muted);text-align:right;}
+  .fr .barwrap{background:var(--surface-2);border-radius:5px;height:16px;overflow:hidden;}
+  .fr .bar{height:100%;border-radius:5px;}
+  .fr .cnt{font-family:var(--mono);color:var(--faint);font-variant-numeric:tabular-nums;}
+  .legend{display:flex;flex-wrap:wrap;gap:8px 18px;margin-top:16px;font-size:12.5px;color:var(--muted);}
+  .legend .li{display:flex;align-items:center;gap:7px;} .sw{width:11px;height:11px;border-radius:3px;}
+
+  footer{padding:32px 0 46px;} footer p{color:var(--faint);font-size:12.5px;margin:4px 0;}
+  .mono{font-family:var(--mono);}
+</style>
+</head>
+<body>
+<nav>
+  <div class="nav-in">
+    <span class="brand">ECGNet.spec</span>
+    <a href="#map">Architecture</a>
+    <a href="#components">Components</a>
+    <a href="#workflow">Workflow</a>
+    <a href="#hyper">Hyperparameters</a>
+    <a href="#sim">Simulator</a>
+    <a href="#expect">Expected results</a>
+    <a href="#future">Enhancement map</a>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="hero-grid"></div>
+  <div class="hero-in">
+    <p class="eyebrow">Model specification · SE-ResNet + Transformer · 12-lead ECG</p>
+    <h1>Every layer, shape, and knob — and what happens when you change them.</h1>
+    <p class="lede">A working map of the model in <span class="mono">my_model/</span>: the components and how tensors flow through them, the full hyperparameter surface, an accurate live simulator for the results you can expect, and a guide to which layer to touch for each future enhancement.</p>
+    <div class="kpis">
+      <div class="kpi"><b id="k-params">21.11 M</b><span>Trainable params</span></div>
+      <div class="kpi"><b>12 → 27</b><span>Leads → diagnoses</span></div>
+      <div class="kpi"><b>7500</b><span>Samples in · 500 Hz · 15 s</span></div>
+      <div class="kpi"><b>235</b><span>Time frames out · ~64 ms each</span></div>
+    </div>
+  </div>
+</header>
+
+<!-- ============ ARCHITECTURE MAP ============ -->
+<section id="map"><div class="wrap">
+  <p class="kick">01 · Architecture map</p>
+  <h2>The forward pass, stage by stage</h2>
+  <p class="sub">The full network at a glance — every block, the operations <em>inside</em> the SE residual block and the Transformer layer, the side-feature branch, and the tensor shape on each edge. Below the diagram, an interactive version lets you click any stage for its exact numbers.</p>
+
+  <div class="diagwrap">
+    <svg class="diag" viewBox="0 0 1180 970" role="img" aria-label="Detailed architecture diagram of the ECGNet model">
+      <defs>
+        <marker id="arr" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="var(--accent)"/></marker>
+        <marker id="arrv" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="var(--violet)"/></marker>
+        <marker id="arrc" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="var(--cyan)"/></marker>
+        <marker id="arra" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="var(--amber)"/></marker>
+      </defs>
+
+      <!-- ===================== MAIN SPINE ===================== -->
+      <!-- Input -->
+      <rect class="box io" x="70" y="30" width="300" height="48" rx="9"/>
+      <text class="lbl" x="220" y="52" text-anchor="middle">Input · 12-lead ECG window</text>
+      <text class="sm"  x="220" y="68" text-anchor="middle">after front-end: 500 Hz · band-pass · norm</text>
+      <text class="shp" x="384" y="58">12 × 7500</text>
+      <path class="edge" d="M220,78 V108" marker-end="url(#arr)"/>
+
+      <!-- Stem -->
+      <rect class="box key" x="70" y="110" width="300" height="172" rx="9"/>
+      <text class="title" x="86" y="130">Multi-scale stem</text>
+      <rect class="inner" x="78"  y="140" width="88" height="34" rx="6"/><text class="sm" x="122" y="156" text-anchor="middle">conv k=7</text><text class="xs" x="122" y="168" text-anchor="middle">stride 2</text>
+      <rect class="inner" x="176" y="140" width="88" height="34" rx="6"/><text class="sm" x="220" y="156" text-anchor="middle">conv k=15</text><text class="xs" x="220" y="168" text-anchor="middle">stride 2</text>
+      <rect class="inner" x="274" y="140" width="88" height="34" rx="6"/><text class="sm" x="318" y="156" text-anchor="middle">conv k=31</text><text class="xs" x="318" y="168" text-anchor="middle">stride 2</text>
+      <path class="edge" d="M122,174 V186" marker-end="url(#arr)"/><path class="edge" d="M220,174 V186" marker-end="url(#arr)"/><path class="edge" d="M318,174 V186" marker-end="url(#arr)"/>
+      <rect class="op" x="90" y="188" width="260" height="24" rx="5"/><text class="opx" x="220" y="204" text-anchor="middle">concatenate → 63 ch</text>
+      <rect class="op" x="90" y="216" width="260" height="24" rx="5"/><text class="opx" x="220" y="232" text-anchor="middle">1×1 conv project → 64 ch</text>
+      <rect class="op" x="90" y="244" width="260" height="24" rx="5"/><text class="opx" x="220" y="260" text-anchor="middle">max-pool k=3 /2</text>
+      <text class="shp" x="384" y="192">64 × 1875</text><text class="pm" x="384" y="206">17.6 K</text>
+      <text class="xs" x="384" y="222" fill="var(--faint)">4× down</text>
+      <path class="edge" d="M220,282 V314" marker-end="url(#arr)"/>
+
+      <!-- Stage 1 -->
+      <rect class="box" x="70" y="316" width="300" height="52" rx="9"/>
+      <text class="lbl" x="220" y="338" text-anchor="middle">Residual stage 1</text>
+      <text class="sm"  x="220" y="356" text-anchor="middle">3 × SE residual block · 64 ch · stride 1</text>
+      <text class="shp" x="384" y="340">64 × 1875</text><text class="pm" x="384" y="354">0.17 M</text>
+      <path class="edge" d="M220,368 V382" marker-end="url(#arr)"/>
+      <!-- Stage 2 -->
+      <rect class="box" x="70" y="384" width="300" height="52" rx="9"/>
+      <text class="lbl" x="220" y="406" text-anchor="middle">Residual stage 2</text>
+      <text class="sm"  x="220" y="424" text-anchor="middle">4 × SE residual block · 128 ch · stride 2</text>
+      <text class="shp" x="384" y="408">128 × 938</text><text class="pm" x="384" y="422">0.88 M</text>
+      <path class="edge" d="M220,436 V450" marker-end="url(#arr)"/>
+      <!-- Stage 3 -->
+      <rect class="box" x="70" y="452" width="300" height="52" rx="9"/>
+      <text class="lbl" x="220" y="474" text-anchor="middle">Residual stage 3</text>
+      <text class="sm"  x="220" y="492" text-anchor="middle">6 × SE residual block · 256 ch · stride 2</text>
+      <text class="shp" x="384" y="476">256 × 469</text><text class="pm" x="384" y="490">5.36 M</text>
+      <path class="edge" d="M220,504 V518" marker-end="url(#arr)"/>
+      <!-- Stage 4 -->
+      <rect class="box" x="70" y="520" width="300" height="52" rx="9"/>
+      <text class="lbl" x="220" y="542" text-anchor="middle">Residual stage 4</text>
+      <text class="sm"  x="220" y="560" text-anchor="middle">3 × SE residual block · 512 ch · stride 2</text>
+      <text class="shp" x="384" y="544">512 × 235</text><text class="pm" x="384" y="558">10.3 M</text>
+      <path class="edge" d="M220,572 V602" marker-end="url(#arr)"/>
+
+      <!-- Transformer -->
+      <rect class="box tf" x="70" y="604" width="300" height="64" rx="9"/>
+      <text class="title titlev" x="220" y="626" text-anchor="middle">Transformer encoder  (optional)</text>
+      <text class="sm"  x="220" y="644" text-anchor="middle">2 layers · 8 heads · sinusoidal PE</text>
+      <text class="sm"  x="220" y="660" text-anchor="middle">self-attention over 235 time frames</text>
+      <text class="shp" x="384" y="632">512 × 235</text><text class="pm" x="384" y="646">4.21 M</text>
+      <path class="edge" d="M220,668 V698" marker-end="url(#arr)"/>
+
+      <!-- Attention pool -->
+      <rect class="box" x="70" y="700" width="300" height="48" rx="9"/>
+      <text class="lbl" x="220" y="722" text-anchor="middle">Attention pooling</text>
+      <text class="sm"  x="220" y="738" text-anchor="middle">softmax over time → single 512-d vector</text>
+      <text class="shp" x="384" y="728">512</text>
+      <path class="edge" d="M220,748 V782" marker-end="url(#arr)"/>
+
+      <!-- Fusion -->
+      <rect class="box key" x="70" y="784" width="300" height="60" rx="9"/>
+      <text class="title" x="220" y="806" text-anchor="middle">Late fusion</text>
+      <text class="sm"  x="220" y="824" text-anchor="middle">concat[ 512 deep ⊕ 2 demo ⊕ 20 feats ]</text>
+      <text class="sm"  x="220" y="838" text-anchor="middle">Linear 534→256 · BN · dropout</text>
+      <text class="shp" x="384" y="812">256</text><text class="pm" x="384" y="826">0.14 M</text>
+      <path class="edge" d="M220,844 V878" marker-end="url(#arr)"/>
+
+      <!-- Output -->
+      <rect class="box io" x="70" y="880" width="300" height="48" rx="9"/>
+      <text class="lbl" x="220" y="902" text-anchor="middle">Classifier → 27 sigmoid logits</text>
+      <text class="sm"  x="220" y="918" text-anchor="middle">multi-label · equivalent pairs tied</text>
+      <text class="shp" x="384" y="908">27</text><text class="pm" x="384" y="922">6.9 K</text>
+
+      <!-- ===================== SE BLOCK CALLOUT ===================== -->
+      <path class="lead" d="M372,478 C 430,478 420,215 468,215"/>
+      <rect class="box" x="470" y="40" width="690" height="372" rx="12"/>
+      <text class="title" x="488" y="66">◂ inside every stage —  SE Residual Block</text>
+      <text class="sm" x="488" y="84">two convolutions + squeeze-excitation gate + identity skip</text>
+
+      <!-- main path -->
+      <circle class="op" cx="585" cy="108" r="12"/><text class="opx" x="585" y="112" text-anchor="middle">x</text>
+      <path class="edge" d="M585,120 V130" marker-end="url(#arr)"/>
+      <rect class="inner" x="500" y="132" width="170" height="34" rx="6"/><text class="sm" x="585" y="148" text-anchor="middle">Conv1d k=7 → BN → ReLU</text><text class="xs" x="585" y="161" text-anchor="middle">stride s (first block)</text>
+      <path class="edge" d="M585,166 V174" marker-end="url(#arr)"/>
+      <rect class="inner" x="500" y="176" width="170" height="26" rx="6"/><text class="sm" x="585" y="193" text-anchor="middle">Dropout 0.2</text>
+      <path class="edge" d="M585,202 V210" marker-end="url(#arr)"/>
+      <rect class="inner" x="500" y="212" width="170" height="30" rx="6"/><text class="sm" x="585" y="231" text-anchor="middle">Conv1d k=7 → BN</text>
+      <path class="edge" d="M585,242 V250" marker-end="url(#arr)"/>
+      <rect class="inner" x="500" y="252" width="170" height="30" rx="6" style="stroke:var(--cyan)"/><text class="sm" x="585" y="271" text-anchor="middle" fill="var(--cyan)">SE gate ⊗  (zero-init BN)</text>
+      <path class="edge" d="M585,282 V300" marker-end="url(#arr)"/>
+      <circle class="op" cx="585" cy="314" r="14"/><text class="opx" x="585" y="319" text-anchor="middle">＋</text>
+      <path class="edge" d="M585,328 V340" marker-end="url(#arr)"/>
+      <rect class="inner" x="500" y="342" width="170" height="30" rx="6"/><text class="sm" x="585" y="361" text-anchor="middle">ReLU → out</text>
+      <!-- skip path -->
+      <path class="skip" d="M585,96 H484 V314 H569" marker-end="url(#arra)"/>
+      <text class="xs" x="480" y="205" fill="var(--amber)" transform="rotate(-90 480 205)">skip: identity or 1×1 down-sample</text>
+
+      <!-- SE gate subpanel -->
+      <path class="lead" d="M670,267 H700"/>
+      <rect class="op" x="700" y="132" width="440" height="150" rx="10"/>
+      <text class="title titlec" x="716" y="154">SE gate  =  channel attention</text>
+      <g>
+        <rect class="inner" x="716" y="170" width="70" height="30" rx="5"/><text class="xs" x="751" y="189" text-anchor="middle">GAP(t)</text>
+        <path class="edgec" d="M786,185 H800" stroke="var(--cyan)" marker-end="url(#arrc)"/>
+        <rect class="inner" x="800" y="170" width="86" height="30" rx="5"/><text class="xs" x="843" y="189" text-anchor="middle">FC C→C/16</text>
+        <path class="edgec" d="M886,185 H900" stroke="var(--cyan)" marker-end="url(#arrc)"/>
+        <rect class="inner" x="900" y="170" width="60" height="30" rx="5"/><text class="xs" x="930" y="189" text-anchor="middle">ReLU</text>
+        <path class="edgec" d="M960,185 H974" stroke="var(--cyan)" marker-end="url(#arrc)"/>
+        <rect class="inner" x="974" y="170" width="86" height="30" rx="5"/><text class="xs" x="1017" y="189" text-anchor="middle">FC C/16→C</text>
+        <path class="edgec" d="M1060,185 H1074" stroke="var(--cyan)" marker-end="url(#arrc)"/>
+        <rect class="inner" x="1074" y="170" width="60" height="30" rx="5"/><text class="xs" x="1104" y="189" text-anchor="middle">σ</text>
+      </g>
+      <text class="opx" x="716" y="234" fill="var(--muted)" style="font-size:12px">out = x · σ( W₂ · ReLU( W₁ · GAP(x) ) )</text>
+      <text class="xs" x="716" y="256">re-weights each channel by global context — cheap, per-recording lead/feature emphasis.</text>
+
+      <!-- ===================== TRANSFORMER CALLOUT ===================== -->
+      <path class="lead" d="M372,636 C 430,636 420,470 468,470"/>
+      <rect class="box tf" x="470" y="440" width="690" height="230" rx="12"/>
+      <text class="title titlev" x="488" y="466">◂ Transformer encoder layer  (×2 · d=512 · 8 heads · FFN 1024)</text>
+
+      <rect class="inner" x="500" y="482" width="250" height="30" rx="6"/><text class="sm" x="625" y="501" text-anchor="middle">+ positional encoding</text>
+      <path class="edgev" d="M625,512 V522" marker-end="url(#arrv)"/>
+      <rect class="inner" x="500" y="524" width="250" height="34" rx="6" style="stroke:var(--violet)"/><text class="sm" x="625" y="545" text-anchor="middle">Multi-Head Self-Attention (8)</text>
+      <path class="edgev" d="M625,558 V566" marker-end="url(#arrv)"/>
+      <rect class="op" x="500" y="568" width="250" height="26" rx="6"/><text class="opx" x="625" y="585" text-anchor="middle" style="font-size:11.5px">Add &amp; Norm</text>
+      <path class="edgev" d="M625,594 V602" marker-end="url(#arrv)"/>
+      <rect class="inner" x="500" y="604" width="250" height="34" rx="6"/><text class="sm" x="625" y="625" text-anchor="middle">Feed-Forward 512→1024→512</text>
+      <path class="edgev" d="M625,638 V646" marker-end="url(#arrv)"/>
+      <rect class="op" x="500" y="648" width="250" height="18" rx="5"/><text class="opx" x="625" y="661" text-anchor="middle" style="font-size:10.5px">Add &amp; Norm → out</text>
+      <!-- residual skips -->
+      <path class="skip" d="M760,524 H772 V581 H752" marker-end="url(#arra)"/>
+      <path class="skip" d="M760,604 H772 V657 H752" marker-end="url(#arra)"/>
+
+      <text class="sm" x="800" y="500">Why it helps:</text>
+      <text class="xs" x="800" y="520">• attends across all 235 frames at once —</text>
+      <text class="xs" x="800" y="536">  the whole 15 s window, any distance apart</text>
+      <text class="xs" x="800" y="556">• captures intermittent ectopy &amp; rhythm</text>
+      <text class="xs" x="800" y="572">  patterns a fixed CNN receptive field misses</text>
+      <text class="xs" x="800" y="596">• toggle with USE_TRANSFORMER;</text>
+      <text class="xs" x="800" y="612">  d must equal the final block width (512)</text>
+      <text class="xs" x="800" y="636" fill="var(--faint)">borrowed from Team 1 (CTN)</text>
+
+      <!-- ===================== FEATURE BRANCH ===================== -->
+      <rect class="box feat" x="470" y="784" width="410" height="150" rx="12"/>
+      <text class="title titlec" x="488" y="810">Side-feature branch  →  fusion</text>
+      <text class="sm" x="488" y="832">Demographics (2):  age (standardized), sex</text>
+      <text class="sm" x="488" y="854">Hand-crafted (20):</text>
+      <text class="xs" x="488" y="872">• HRV: mean-RR, SDNN, RMSSD, pNN50, HR, CV  (6)</text>
+      <text class="xs" x="488" y="888">• waveform amplitude statistics  (6)</text>
+      <text class="xs" x="488" y="904">• QRS template consistency  (4)</text>
+      <text class="xs" x="488" y="920">• cross-lead energy summary  (4)</text>
+      <path class="edgec" d="M470,846 C 420,846 420,814 372,814" stroke="var(--cyan)" marker-end="url(#arrc)"/>
+      <text class="xs" x="392" y="866" fill="var(--cyan)">concat</text>
+    </svg>
+
+    <div class="diaglegend">
+      <div class="li"><span class="sw" style="border-color:var(--accent);background:var(--accent-soft)"></span>Key stage</div>
+      <div class="li"><span class="sw" style="border-color:var(--violet);background:transparent"></span>Transformer (optional)</div>
+      <div class="li"><span class="sw" style="border-color:var(--cyan);background:transparent"></span>Feature / attention path</div>
+      <div class="li"><span class="sw" style="border-color:var(--amber);background:transparent"></span>Residual skip connection</div>
+      <div class="li"><span class="shp" style="font-family:var(--mono)">C × T</span>&nbsp;= channels × time frames on each edge</div>
+    </div>
+  </div>
+
+  <h3 style="font-size:17px;margin:28px 0 12px;">Interactive — click a stage for its exact numbers</h3>
+  <div class="pipe" id="pipe"></div>
+  <div class="detail" id="detail"></div>
+</div></section>
+
+<!-- ============ COMPONENTS ============ -->
+<section id="components"><div class="wrap">
+  <p class="kick">02 · Components</p>
+  <h2>The building blocks</h2>
+  <p class="sub">Each module in <span class="mono">model.py</span>, with its tensor contract, its defining operation, and the one knob most worth tuning.</p>
+  <div class="cgrid" id="cgrid"></div>
+</div></section>
+
+<!-- ============ WORKFLOW ============ -->
+<section id="workflow"><div class="wrap">
+  <p class="kick">03 · Workflow</p>
+  <h2>From raw recording to prediction</h2>
+  <p class="sub">Two phases share one front-end. Training builds a cross-validated ensemble and tunes thresholds; inference averages folds and windows.</p>
+
+  <div class="phase">▸ Shared front-end &amp; training</div>
+  <div class="flow" id="flow-train"></div>
+  <div class="phase">▸ Inference</div>
+  <div class="flow" id="flow-infer"></div>
+</div></section>
+
+<!-- ============ HYPERPARAMETERS ============ -->
+<section id="hyper"><div class="wrap">
+  <p class="kick">04 · Hyperparameters</p>
+  <h2>The full control surface</h2>
+  <p class="sub">Every value lives in <span class="mono">config.py</span>. The last two columns say what to expect when you push a knob up or down.</p>
+  <div class="tw"><table id="hptable">
+    <thead><tr><th>Parameter</th><th>Default</th><th>What it controls</th><th>↑ Increase</th><th>↓ Decrease</th></tr></thead>
+    <tbody></tbody>
+  </table></div>
+</div></section>
+
+<!-- ============ SIMULATOR ============ -->
+<section id="sim"><div class="wrap">
+  <p class="kick">05 · Simulator</p>
+  <h2>Change the design, see the consequences</h2>
+  <p class="sub">Parameter counts, tensor shapes, downsampling, relative compute and memory are computed <b>exactly</b> from the same formulas that reproduce the real model (21,114,630 params at defaults). The expected challenge-metric band is a calibrated <i>heuristic</i>, not a measured run — treat it as direction, not a promise.</p>
+
+  <div class="sim">
+    <div class="controls">
+      <div class="ctl">
+        <label>Backbone depth <span class="val" id="v-depth"></span></label>
+        <div class="seg" id="s-depth"></div>
+      </div>
+      <div class="ctl">
+        <label>Width multiplier <span class="val" id="v-width"></span></label>
+        <div class="seg" id="s-width"></div>
+      </div>
+      <div class="ctl">
+        <label>Analysis window <span class="val" id="v-sec"></span></label>
+        <div class="seg" id="s-sec"></div>
+      </div>
+      <div class="ctl">
+        <label>Transformer head <span class="val" id="v-tf"></span></label>
+        <div class="seg" id="s-tf"></div>
+      </div>
+      <div class="ctl">
+        <label>Transformer layers <span class="val" id="v-tfl"></span></label>
+        <input type="range" id="r-tfl" min="1" max="6" step="1" value="2">
+      </div>
+      <div class="ctl">
+        <label>Batch size <span class="val" id="v-bs"></span></label>
+        <div class="seg" id="s-bs"></div>
+      </div>
+      <div class="ctl">
+        <label>CV folds (ensemble) <span class="val" id="v-folds"></span></label>
+        <input type="range" id="r-folds" min="1" max="10" step="1" value="5">
+      </div>
+    </div>
+
+    <div class="out">
+      <div class="metrics">
+        <div class="metric"><b id="m-params">–</b><span>Parameters</span></div>
+        <div class="metric"><b id="m-frames">–</b><span>Time frames out</span><br><small id="m-res"></small></div>
+        <div class="metric"><b id="m-compute">–</b><span>Compute / epoch</span><br><small>relative to default</small></div>
+        <div class="metric"><b id="m-mem">–</b><span>Train VRAM</span><br><small>rough, batch-scaled</small></div>
+      </div>
+
+      <div class="gauge">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;">
+          <span style="font-size:13px;color:var(--muted);">Expected internal CV challenge-metric</span>
+          <span class="mono" id="g-band" style="color:var(--accent);font-size:14px;"></span>
+        </div>
+        <div class="track" id="g-track">
+          <div class="mk" id="mk-single" data-l="single"></div>
+          <div class="mk" id="mk-ens" data-l="ensemble"></div>
+        </div>
+        <div class="scale"><span>0.40</span><span>0.46</span><span>0.52</span><span>0.58</span><span>0.62</span></div>
+        <p class="disc" id="g-note" style="margin-top:12px;"></p>
+      </div>
+
+      <div class="shapes tw"><table id="shapetable">
+        <thead><tr><th>Stage</th><th>Output shape (C × T)</th><th>Params</th></tr></thead>
+        <tbody></tbody>
+      </table></div>
+    </div>
+  </div>
+</div></section>
+
+<!-- ============ EXPECTED RESULTS ============ -->
+<section id="expect"><div class="wrap">
+  <p class="kick">06 · Expected results</p>
+  <h2>What the numbers will actually look like</h2>
+  <p class="sub">Two things dominate real performance: the severe class imbalance in the training data, and whether you tune thresholds. Both are shown here with the deltas you can expect.</p>
+
+  <h3 style="font-size:17px;margin:6px 0 4px;">Training-set class frequency → per-class difficulty</h3>
+  <p style="color:var(--muted);font-size:14px;margin:0 0 18px;max-width:66ch;">Recall tracks frequency. Expect strong performance on the green classes and low, high-variance recall on the red ones — this is exactly why the model uses focal loss, inverse-frequency weighting, and per-class thresholds. (√-scaled bars; actual counts at right.)</p>
+  <div class="freq" id="freq"></div>
+  <div class="legend">
+    <div class="li"><span class="sw" style="background:var(--accent)"></span>Abundant · expect high recall (&gt;3000)</div>
+    <div class="li"><span class="sw" style="background:var(--cyan)"></span>Moderate (1000–3000)</div>
+    <div class="li"><span class="sw" style="background:var(--amber)"></span>Scarce (400–1000)</div>
+    <div class="li"><span class="sw" style="background:var(--red)"></span>Rare · expect weak recall (&lt;400)</div>
+  </div>
+
+  <h3 style="font-size:17px;margin:34px 0 4px;">Ablations — expected score impact</h3>
+  <p style="color:var(--muted);font-size:14px;margin:0 0 16px;max-width:66ch;">Heuristic deltas from the full model, ordered by magnitude. Threshold tuning is the single biggest lever — a flat 0.5 cutoff throws away more than the whole Transformer head is worth.</p>
+  <div class="tw"><table id="ablation">
+    <thead><tr><th>Remove / replace</th><th>Expected Δ metric</th><th>Why</th></tr></thead>
+    <tbody></tbody>
+  </table></div>
+</div></section>
+
+<!-- ============ ENHANCEMENT MAP ============ -->
+<section id="future"><div class="wrap">
+  <p class="kick">07 · Enhancement map</p>
+  <h2>Where to change layers next</h2>
+  <p class="sub">A goal-oriented index into the codebase: what to try, which module or config to edit, and which team pioneered it.</p>
+  <div class="tw"><table id="enh">
+    <thead><tr><th>Goal</th><th>Change</th><th>Where</th><th>Precedent</th></tr></thead>
+    <tbody></tbody>
+  </table></div>
+</div></section>
+
+<footer><div class="wrap">
+  <p class="mono">ECGNet model specification · my_model/ · PhysioNet-CinC 2020</p>
+  <p>Parameter counts and tensor shapes are exact (verified against the built PyTorch model). Expected-metric bands and ablation deltas are calibrated heuristics for guidance, not measured results.</p>
+</div></footer>
+
+<script>
+"use strict";
+/* ---------- fixed reference data (verified against the real model) ---------- */
+const FS=500;
+const STAGES=[
+  {id:"input",name:"Input signal",desc:"12-lead recording, any rate/length",shape:"12 × 7500",params:0,pct:0,tag:"front-end",
+   det:"Raw waveform after the shared front-end: resampled to 500 Hz, gain-corrected, band-pass filtered 3–45 Hz, and robustly normalized per lead (median / IQR). Fixed 15 s window = 7500 samples.",
+   note:"Change with FS and WINDOW_SECONDS in config.py."},
+  {id:"stem",name:"Multi-scale stem",desc:"parallel k=7/15/31 convs → project → maxpool",shape:"64 × 1875",params:17642,pct:0.1,tag:"MultiScaleStem",
+   det:"Three parallel stride-2 convolutions with kernels 7, 15 and 31 capture QRS morphology and slow rhythm at once. Concatenated, projected 1×1 to 64 channels, then max-pooled. 4× total downsample.",
+   note:"STEM_KERNELS sets the scales; STEM_CHANNELS the width."},
+  {id:"l1",name:"Residual stage 1",desc:"3 × SE-block, 64 ch, stride 1",shape:"64 × 1875",params:174336,pct:0.8,tag:"layer1",
+   det:"Three SE residual blocks at full temporal resolution. Cheap (0.8% of weights) but sets up low-level features. No downsampling here.",
+   note:"BLOCK_LAYERS[0] controls the block count."},
+  {id:"l2",name:"Residual stage 2",desc:"4 × SE-block, 128 ch, stride 2",shape:"128 × 938",params:878848,pct:4.2,tag:"layer2",
+   det:"Doubles channels, halves time. Four SE blocks. The first block carries a 1×1 downsample on its skip path to match shapes.",
+   note:"BLOCK_LAYERS[1] and BLOCK_CHANNELS[1]."},
+  {id:"l3",name:"Residual stage 3",desc:"6 × SE-block, 256 ch, stride 2",shape:"256 × 469",params:5364224,pct:25.4,tag:"layer3",
+   det:"The deepest stage by block count (6). A quarter of all parameters live here — this is where mid-level rhythm/morphology abstractions form.",
+   note:"BLOCK_LAYERS[2] — the most impactful depth knob."},
+  {id:"l4",name:"Residual stage 4",desc:"3 × SE-block, 512 ch, stride 2",shape:"512 × 235",params:10329088,pct:48.9,tag:"layer4",
+   det:"Widest stage (512 ch) and the single largest parameter block (49%). Output is a 512-channel sequence of 235 frames, each summarizing ~64 ms.",
+   note:"BLOCK_CHANNELS[3] must equal D_MODEL when the Transformer is on."},
+  {id:"tf",name:"Transformer encoder",desc:"2 layers · 8 heads · sinusoidal PE",shape:"512 × 235",params:4205568,pct:19.9,tag:"Transformer (optional)",
+   det:"Self-attention over the 235-frame sequence models long-range dependencies (e.g. intermittent ectopic beats) that a fixed CNN receptive field misses. Positional encoding is added first. Toggle with USE_TRANSFORMER.",
+   note:"N_TRANSFORMER_LAYERS, N_HEAD, D_FF. Borrowed from Team 1 (CTN)."},
+  {id:"pool",name:"Attention pooling",desc:"learned soft-attention over time → 512-d",shape:"512",params:513,pct:0.0,tag:"AttentionPool",
+   det:"A 1×1 conv scores each time frame; a softmax turns scores into weights and collapses the sequence to a single 512-d vector — sharper than global mean-pooling. Also makes the model length-agnostic.",
+   note:"Swap for multi-head or multi-window pooling to enrich the summary."},
+  {id:"fuse",name:"Late fusion",desc:"concat deep ⊕ age,sex ⊕ 20 feats → 256",shape:"256",params:137472,pct:0.7,tag:"fusion MLP",
+   det:"The 512-d deep vector is concatenated with 2 demographic values and 20 hand-crafted HRV/template/waveform features, then compressed to 256 with BN + dropout. Cheap, robust signal the CNN can miss.",
+   note:"N_WIDE_FEATS, FUSION_HIDDEN. Borrowed from Teams 1 & 10."},
+  {id:"out",name:"Classifier",desc:"linear → 27 sigmoid logits",shape:"27",params:6939,pct:0.0,tag:"classifier",
+   det:"A single linear layer to 27 logits. Sigmoid (not softmax) — this is multi-label. Equivalent-class pairs are tied to one probability at inference.",
+   note:"NUM_CLASSES fixed at 27 by the challenge."}
+];
+
+const COMPONENTS=[
+  {n:"SELayer",cls:"squeeze-excitation",p:"Global-average-pools each channel, learns a per-channel gate (Linear→ReLU→Linear→Sigmoid), and rescales. Lets the block emphasize informative leads/features per recording.",io:"(B, C, T) → (B, C, T)",frm:"x * σ(W₂·ReLU(W₁·avgpool(x)))",tune:"reduction (16) — smaller = more capacity in the gate."},
+  {n:"SEResBlock",cls:"residual unit",p:"Two same-width convolutions (kernel 7) with BN+ReLU, an SE gate, in-block dropout, and an identity skip. The last BN is zero-initialized so the block starts as identity.",io:"(B, Cin, T) → (B, Cout, T/stride)",frm:"y = ReLU( SE(conv₂(drop(conv₁(x)))) + skip(x) )",tune:"BLOCK_KERNEL (7) — larger sees wider morphology."},
+  {n:"MultiScaleStem",cls:"input stem",p:"Parallel stride-2 convolutions at three kernel sizes run on the raw signal, concatenate, project 1×1 to the stem width, then max-pool. Captures fast and slow structure from the first layer.",io:"(B, 12, T) → (B, 64, T/4)",frm:"maxpool( 1×1( ‖ₖ convₖ(x) ) )",tune:"STEM_KERNELS — add a longer kernel for rhythm."},
+  {n:"PositionalEncoding",cls:"transformer input",p:"Adds fixed sinusoidal position signals so self-attention knows frame order. No learnable parameters.",io:"(B, T, d) → (B, T, d)",frm:"x + [sin/cos](pos, d)",tune:"max_len only; automatic with window length."},
+  {n:"TransformerEncoder",cls:"temporal head",p:"Standard multi-head self-attention + feed-forward layers over the convolved sequence. Models dependencies across the whole 15 s window regardless of distance.",io:"(B, T, 512) → (B, T, 512)",frm:"MHSA + FFN, ×N_LAYERS",tune:"N_TRANSFORMER_LAYERS, N_HEAD, D_FF."},
+  {n:"AttentionPool",cls:"pooling",p:"Learns which time frames matter and takes their weighted sum — a length-agnostic, sharper alternative to global average pooling.",io:"(B, C, T) → (B, C)",frm:"Σₜ softmax(score(x))ₜ · xₜ",tune:"replace with multi-head attention pooling."},
+  {n:"FocalBCELoss",cls:"objective",p:"Class-weighted binary cross-entropy with a focal term that down-weights easy negatives, plus label smoothing. Rescues the rare rhythm classes.",io:"(logits, targets) → scalar",frm:"Σ_c w_c · (1−p_t)^γ · BCE",tune:"FOCAL_GAMMA (2.0), class weights = 1/log(freq)."},
+  {n:"ECGNet.forward",cls:"full model",p:"Orchestrates the whole pass: stem → 4 residual stages → optional Transformer → attention pool → concat side-features → fusion → 27 logits.",io:"(sig, wide) → (B, 27)",frm:"see architecture map above",tune:"USE_TRANSFORMER toggles the temporal head."}
+];
+
+const TRAIN_STEPS=[
+  {n:"01",h:"Preprocess",p:"Resample→500 Hz, gain-correct, band-pass 3–45 Hz, robust per-lead normalize.",f:"preprocessing.py"},
+  {n:"02",h:"Extract wide features",p:"Age, sex + 20 HRV / template / waveform statistics per record.",f:"features.py"},
+  {n:"03",h:"Stratified k-fold",p:"Iterative multi-label stratification keeps every rare class balanced across 5 folds.",f:"dataset.stratified_kfold"},
+  {n:"04",h:"Augment + batch",p:"Random crop, lead dropout, Gaussian noise, baseline wander; mixup at the batch level.",f:"dataset.py"},
+  {n:"05",h:"Train fold",p:"AdamW + warmup→cosine LR, focal BCE, gradient clip; an EMA copy is tracked.",f:"train_12ECG_classifier.py"},
+  {n:"06",h:"Select + tune thresholds",p:"Keep best-EMA epoch by challenge metric, then coordinate-ascent per-class thresholds on the held-out fold.",f:"metric.optimize_thresholds"},
+  {n:"07",h:"Save fold",p:"Weights, thresholds, and feature stats written per fold for the ensemble.",f:"→ model_dir/fold_k/"}
+];
+const INFER_STEPS=[
+  {n:"01",h:"Preprocess record",p:"Same front-end as training — identical representation.",f:"preprocessing.py"},
+  {n:"02",h:"Sliding windows (TTA)",p:"Up to 10 evenly-spaced windows across long recordings.",f:"preprocessing.sliding_windows"},
+  {n:"03",h:"Ensemble folds",p:"Every fold model scores every window; sigmoid probabilities are averaged.",f:"run_12ECG_classifier.py"},
+  {n:"04",h:"Threshold + tie",p:"Apply averaged per-class thresholds; mirror equivalent pairs; guarantee ≥1 label.",f:"run_12ECG_classifier.py"}
+];
+
+const HP=[
+ ["grp","Signal front-end"],
+ ["FS","500 Hz","Common sampling rate every record is resampled to.","Finer detail, more samples, slower.","Coarser signal, faster, may blur QRS."],
+ ["WINDOW_SECONDS","15 s","Length of the analysis window (7500 samples).","More rhythm context; longer sequence, more compute.","Less context; risks missing intermittent events."],
+ ["FILTER_BANDWIDTH","[3, 45] Hz","Band-pass that removes baseline drift + HF noise.","Wider band keeps detail + noise.","Narrower band is cleaner but can clip morphology."],
+ ["grp","Architecture"],
+ ["BLOCK_LAYERS","[3,4,6,3]","Blocks per residual stage (→ SE-ResNet-34).","Deeper: more capacity, more overfit + compute.","Shallower: faster, less capacity."],
+ ["BLOCK_CHANNELS","[64,128,256,512]","Channel width per stage.","Wider: more capacity (quadratic params).","Narrower: much smaller + faster."],
+ ["BLOCK_KERNEL","7","Temporal kernel of residual convs.","Larger receptive field per layer.","Sharper local features, less context."],
+ ["SE_REDUCTION","16","Squeeze-excitation bottleneck ratio.","Larger = weaker, cheaper gating.","Smaller = stronger, costlier gating."],
+ ["USE_TRANSFORMER","True","Enables the self-attention temporal head.","On: long-range context (+score, +compute).","Off: pure CNN, faster, slightly lower."],
+ ["N_TRANSFORMER_LAYERS","2","Depth of the Transformer encoder.","More: richer temporal mixing, diminishing.","Fewer: cheaper, less global context."],
+ ["N_HEAD / D_FF","8 / 1024","Attention heads and FFN width.","Bigger heads/FFN = more capacity.","Smaller = lighter head."],
+ ["N_WIDE_FEATS","20","Hand-crafted features fused before the head.","More features: more side signal.","Fewer: leaner fusion, less robustness."],
+ ["grp","Training"],
+ ["N_FOLDS","5","Cross-validation folds → ensemble size.","More folds: better ensemble + more train time.","Fewer: faster, higher variance."],
+ ["EPOCHS","40","Passes over the data per fold.","More: better fit until overfitting.","Fewer: underfit risk."],
+ ["BATCH_SIZE","64","Samples per step.","Larger: smoother, more VRAM.","Smaller: noisier, less VRAM."],
+ ["LR","1e-3","Peak learning rate (AdamW).","Higher: faster but unstable.","Lower: stable but slow."],
+ ["WEIGHT_DECAY","1e-2","L2 regularization.","More: stronger regularization.","Less: more fitting freedom."],
+ ["FOCAL_GAMMA","2.0","Focal down-weighting of easy negatives.","Higher: focus harder on rare/hard.","0: plain weighted BCE."],
+ ["MIXUP_ALPHA","0.2","Strength of mixup interpolation.","Higher: more regularization.","0: disabled."],
+ ["EMA_DECAY","0.999","Weight-averaging decay.","Higher: smoother, slower to track.","Lower: closer to raw weights."],
+ ["LABEL_SMOOTHING","0.02","Softens targets away from 0/1.","More: less overconfident.","0: hard targets."],
+ ["grp","Inference"],
+ ["TTA_WINDOWS","10","Sliding windows averaged at test time.","More: steadier probs, slower.","Fewer: faster, noisier."]
+];
+
+const FREQ=[["SNR",20846],["LAD",6086],["TAb",4673],["AF",3475],["RBBB",2402],["STach",2402],["IAVB",2394],["SB",2359],["LAnFB",1806],["PAC",1729],["IRBBB",1611],["LQT",1513],["SA",1240],["TInv",1112],["LBBB",1041],["QAb",1013],["NSIVCB",997],["CRBBB",683],["LQRSV",556],["RAD",427],["VPB",365],["LPR",340],["AFL",314],["PR",299],["Brady",288],["SVPB",215],["PVC",188]];
+function freqColor(v){return v>3000?"var(--accent)":v>=1000?"var(--cyan)":v>=400?"var(--amber)":"var(--red)";}
+
+const ABLATION=[
+ ["Flat 0.5 threshold (no tuning)","−0.030 … −0.050","Thresholds tuned per class to the reward matrix; a flat cut mislabels imbalanced classes. Biggest single lever."],
+ ["No focal loss / class weighting","−0.015 … −0.025","Rare rhythm classes collapse to near-zero recall without re-weighting."],
+ ["Remove Transformer head","−0.010 … −0.015","Loses long-range temporal context for intermittent arrhythmias."],
+ ["Single fold (no ensemble)","−0.006 … −0.012","Ensembling folds averages out variance in the score."],
+ ["Remove demographic + feature fusion","−0.005 … −0.010","Age/sex and HRV features add cheap, robust signal."],
+ ["Single window (no TTA)","−0.004 … −0.008","Averaging windows steadies probabilities on long records."],
+ ["Plain ResNet (no SE)","−0.005 … −0.008","Squeeze-excitation adds adaptive channel weighting."],
+ ["No EMA weight averaging","−0.002 … −0.004","EMA smooths the final weights for a small, free gain."]
+];
+
+const ENH=[
+ ["Longer-range temporal reasoning","Add Transformer layers / widen FFN","config: N_TRANSFORMER_LAYERS, D_FF","Team 1 (CTN)"],
+ ["Stronger channel attention","Swap SELayer → CBAM or ECA-Net","model.py: SELayer","—"],
+ ["Split-attention backbone","Replace SEResBlock with a ResNeSt block","model.py + config.block","Team 6"],
+ ["Self-supervised pretraining","Pretrain backbone as VAE / contrastive, then fine-tune","new pretrain script","Team 7"],
+ ["Multi-scale dilated context","Add a dilated-conv (TCN) branch to the backbone","model.py backbone","Team 7"],
+ ["Lead-topology awareness","Graph conv over the 12 leads before the stem","new module before stem","—"],
+ ["Domain robustness across hospitals","Add a domain-adversarial head (gradient reversal)","model.py + loss.py","Team 5"],
+ ["Richer hand-crafted features","Integrate biosppy HRV / template descriptors","features.py","Team 1"],
+ ["Rule-based safety net","Override rare rhythm classes with clinical rules","new post-process in run_12ECG_classifier","Team 3"],
+ ["Probability calibration","Temperature scaling on validation logits","new calibrate step","—"],
+ ["Sharper sequence summary","Multi-head / multi-window attention pooling","model.py: AttentionPool","—"],
+ ["Wavelet-scattering front-end","Prepend a scattering transform to the signal","preprocessing.py","Team 4"]
+];
+
+/* ---------- render architecture map ---------- */
+const pipe=document.getElementById("pipe"), detail=document.getElementById("detail");
+STAGES.forEach((s,i)=>{
+  const el=document.createElement("div");
+  el.className="pstage"+(i===0?" active":"");
+  el.innerHTML=`<div><div class="pname">${s.name}</div><div class="pdesc">${s.desc}</div>
+    <div class="pbar"><i style="width:${Math.max(s.pct,0.4)}%"></i></div></div>
+    <div></div><div class="pshape">${s.shape}<br><span style="color:var(--faint)">${s.pct}% params</span></div>`;
+  el.onclick=()=>{document.querySelectorAll(".pstage").forEach(n=>n.classList.remove("active"));el.classList.add("active");showDetail(s);};
+  pipe.appendChild(el);
+  if(i<STAGES.length-1){const c=document.createElement("div");c.className="pconn";pipe.appendChild(c);}
+});
+function showDetail(s){
+  detail.innerHTML=`<span class="tag">${s.tag}</span><h3>${s.name}</h3><p>${s.det}</p>
+   <div class="row">
+     <div><span>Output shape</span><b>${s.shape}</b></div>
+     <div><span>Parameters</span><b>${s.params.toLocaleString()}</b></div>
+     <div><span>Param share</span><b>${s.pct}%</b></div>
+   </div>
+   <p style="margin-top:12px;font-size:13px;color:var(--faint)">⚙ ${s.note}</p>`;
+}
+showDetail(STAGES[0]);
+
+/* ---------- components ---------- */
+const cgrid=document.getElementById("cgrid");
+COMPONENTS.forEach(c=>{
+  const el=document.createElement("div");el.className="comp";
+  el.innerHTML=`<div class="ch"><h3>${c.n}</h3><span class="cls">${c.cls}</span></div>
+    <p>${c.p}</p><div class="io">${c.io}</div><div class="frm">${c.frm}</div>
+    <div class="tune"><b>Tune:</b> ${c.tune}</div>`;
+  cgrid.appendChild(el);
+});
+
+/* ---------- workflow ---------- */
+function renderSteps(id,steps){const g=document.getElementById(id);steps.forEach(s=>{
+  const el=document.createElement("div");el.className="step";
+  el.innerHTML=`<div class="n">${s.n}</div><h4>${s.h}</h4><p>${s.p}</p><div class="files">${s.f}</div>`;
+  g.appendChild(el);});}
+renderSteps("flow-train",TRAIN_STEPS);renderSteps("flow-infer",INFER_STEPS);
+
+/* ---------- hyperparameter table ---------- */
+const hpbody=document.querySelector("#hptable tbody");
+HP.forEach(r=>{
+  if(r[0]==="grp"){const tr=document.createElement("tr");tr.innerHTML=`<td colspan="5" class="grp">▸ ${r[1]}</td>`;hpbody.appendChild(tr);return;}
+  const tr=document.createElement("tr");
+  tr.innerHTML=`<td><span class="hp">${r[0]}</span></td><td class="mono" style="color:var(--cyan)">${r[1]}</td><td>${r[2]}</td><td class="up">${r[3]}</td><td class="dn">${r[4]}</td>`;
+  hpbody.appendChild(tr);
+});
+
+/* ---------- expected results: freq chart ---------- */
+const freq=document.getElementById("freq");const maxF=Math.sqrt(FREQ[0][1]);
+FREQ.forEach(([n,v])=>{
+  const el=document.createElement("div");el.className="fr";
+  el.innerHTML=`<div class="lbl">${n}</div><div class="barwrap"><div class="bar" style="width:${Math.sqrt(v)/maxF*100}%;background:${freqColor(v)}"></div></div><div class="cnt">${v.toLocaleString()}</div>`;
+  freq.appendChild(el);
+});
+const abl=document.querySelector("#ablation tbody");
+ABLATION.forEach(r=>{const tr=document.createElement("tr");tr.innerHTML=`<td>${r[0]}</td><td class="mono" style="color:var(--amber);white-space:nowrap">${r[1]}</td><td style="color:var(--muted)">${r[2]}</td>`;abl.appendChild(tr);});
+const enh=document.querySelector("#enh tbody");
+ENH.forEach(r=>{const tr=document.createElement("tr");tr.innerHTML=`<td><b>${r[0]}</b></td><td>${r[1]}</td><td class="mono" style="color:var(--cyan);font-size:12px">${r[2]}</td><td style="color:var(--muted)">${r[3]}</td>`;enh.appendChild(tr);});
+
+/* ================= SIMULATOR ================= */
+const DEPTHS={"ResNet-18":[2,2,2,2],"ResNet-34":[3,4,6,3],"ResNet-50-wide":[3,4,6,3],"ResNet-101":[3,4,23,3]};
+const WIDTHS={"0.5×":0.5,"1×":1,"1.5×":1.5,"2×":2};
+const SECS=[5,10,15,20];
+const BSS=[16,32,64,128];
+let state={depth:"ResNet-34",width:1,sec:15,tf:true,tfl:2,bs:64,folds:5};
+
+function convBN(i,o,k){return i*o*k+2*o;}
+function seP(o){const h=Math.max(Math.floor(o/16),4);return 2*o*h;}
+function block(i,o,k,down){let p=i*o*k+2*o+o*o*k+2*o+seP(o);if(down)p+=i*o+2*o;return p;}
+function stage(i,o,L,k,stride){let down=(stride!==1||i!==o);let p=block(i,o,k,down);for(let b=1;b<L;b++)p+=block(o,o,k,false);return p;}
+function round8(x){return Math.max(8,Math.round(x/8)*8);}
+function stemP(width,leads=12){const sc=round8(64*width),br=Math.floor(sc/3);let conv=0,bn=0;[7,15,31].forEach(k=>{conv+=leads*br*k;bn+=2*br;});const merged=br*3,proj=merged*sc+2*sc;return{p:conv+bn+proj,out:sc};}
+function convOut(L,k,s,p){return Math.floor((L+2*p-k)/s)+1;}
+
+function compute(){
+  const k=7, width=state.width;
+  const layers=DEPTHS[state.depth];
+  const ch=[round8(64*width),round8(128*width),round8(256*width),round8(512*width)];
+  const st=stemP(width);
+  const stemOut=st.out;
+  const p1=stage(stemOut,ch[0],layers[0],k,1);
+  const p2=stage(ch[0],ch[1],layers[1],k,2);
+  const p3=stage(ch[1],ch[2],layers[2],k,2);
+  const p4=stage(ch[2],ch[3],layers[3],k,2);
+  const d=ch[3], dff=1024;
+  const tfPer=4*d*d+2*d*dff+dff+9*d;
+  const tfP=state.tf?tfPer*state.tfl:0;
+  const poolP=d+1;
+  const fuseP=(d+2+20)*256+256+512;
+  const clsP=256*27+27;
+  const total=st.p+p1+p2+p3+p4+tfP+poolP+fuseP+clsP;
+
+  // shape trace
+  const WS=FS*state.sec;
+  const Lstem1=convOut(WS,k,2,Math.floor(k/2));
+  const Lpool=convOut(Lstem1,3,2,1);
+  const L1=Lpool;
+  const L2=convOut(L1,k,2,Math.floor(k/2));
+  const L3=convOut(L2,k,2,Math.floor(k/2));
+  const L4=convOut(L3,k,2,Math.floor(k/2));
+
+  const rows=[
+    ["Input",`12 × ${WS}`,0],
+    ["Stem",`${stemOut} × ${Lpool}`,st.p],
+    ["Stage 1",`${ch[0]} × ${L1}`,p1],
+    ["Stage 2",`${ch[1]} × ${L2}`,p2],
+    ["Stage 3",`${ch[2]} × ${L3}`,p3],
+    ["Stage 4",`${ch[3]} × ${L4}`,p4],
+    ...(state.tf?[["Transformer",`${ch[3]} × ${L4}`,tfP]]:[]),
+    ["Attn pool",`${ch[3]}`,poolP],
+    ["Fusion",`256`,fuseP],
+    ["Classifier",`27`,clsP],
+  ];
+
+  // compute proxy (relative FLOPs per sample)
+  function stageF(i,o,L,Lout,stride,down){let f=(i*o*k+o*o*k)*Lout+(down?i*o*Lout:0);for(let b=1;b<L;b++)f+=2*o*o*k*Lout;return f;}
+  let flops=0;
+  [7,15,31].forEach(kk=>{flops+=12*Math.floor(stemOut/3)*kk*Lstem1;});
+  flops+=(Math.floor(stemOut/3)*3)*stemOut*Lpool;
+  flops+=stageF(stemOut,ch[0],layers[0],L1,1,true);
+  flops+=stageF(ch[0],ch[1],layers[1],L2,2,true);
+  flops+=stageF(ch[1],ch[2],layers[2],L3,2,true);
+  flops+=stageF(ch[2],ch[3],layers[3],L4,2,true);
+  if(state.tf)flops+=state.tfl*(L4*L4*d*4+L4*d*dff*2);
+
+  // activation elements per sample (for memory proxy)
+  let act=stemOut*Lpool+ch[0]*L1+ch[1]*L2+ch[2]*L3+ch[3]*L4;
+  if(state.tf)act+=state.tfl*L4*d;
+
+  return {total,rows,flops,act,d,L4,WS,layers};
+}
+
+// default reference for normalization
+const DEF=(()=>{const s=JSON.stringify(state);const r=compute();return r;})();
+
+function fmtP(x){return x>=1e6?(x/1e6).toFixed(2)+" M":(x/1e3).toFixed(0)+" K";}
+
+function expectedScore(r){
+  // calibrated heuristic band centered on a realistic single-model CV metric
+  let s=0.525;
+  const nb=r.layers.reduce((a,b)=>a+b,0);
+  // depth: gentle bump peaking ~16-33 blocks, mild overfit penalty beyond
+  s+=Math.min(0.010,(nb-8)*0.0012)-Math.max(0,(nb-33))*0.0015;
+  // width
+  const w=state.width;
+  s+= w<1? -0.02*(1-w) : (w===1?0: (0.006 - (w-1.5>0?(w-1.5)*0.004:0)) );
+  // transformer
+  s+= state.tf? (0.012 + Math.min(0.004,(state.tfl-2)*0.0015) - Math.max(0,(state.tfl-4))*0.002) : -0.011;
+  // window
+  s+= state.sec>=12?0 : -0.02*(12-state.sec)/6;
+  s+= state.sec>=15?0.002:0;
+  // batch (very mild)
+  s+= state.bs<32?-0.004:(state.bs>96?-0.002:0);
+  const single=Math.max(0.42,Math.min(0.60,s));
+  const ens=Math.max(0.42,Math.min(0.615, single + Math.min(0.012, Math.log2(state.folds)*0.0045)));
+  return {single,ens};
+}
+function pos(v){return ((v-0.40)/(0.62-0.40))*100;}
+
+function render(){
+  const r=compute();
+  document.getElementById("m-params").textContent=fmtP(r.total);
+  document.getElementById("m-frames").textContent=r.L4;
+  document.getElementById("m-res").textContent=`~${(state.sec*1000/r.L4).toFixed(0)} ms / frame`;
+  document.getElementById("m-compute").textContent=(r.flops/DEF.flops).toFixed(2)+"×";
+  // rough VRAM: activations*batch*4B*3(fwd+bwd+wc) + params*4B*4(adam) ; to GB
+  const gb=((r.act*state.bs*4*3)+(r.total*4*4))/1e9;
+  document.getElementById("m-mem").textContent="~"+gb.toFixed(1)+" GB";
+
+  // shape table
+  const tb=document.querySelector("#shapetable tbody");tb.innerHTML="";
+  r.rows.forEach(([n,sh,p])=>{const tr=document.createElement("tr");
+    tr.innerHTML=`<td>${n}</td><td class="mono" style="color:var(--cyan)">${sh}</td><td class="mono" style="color:var(--faint)">${p?p.toLocaleString():"–"}</td>`;tb.appendChild(tr);});
+
+  // gauge
+  const {single,ens}=expectedScore(r);
+  document.getElementById("mk-single").style.left=pos(single)+"%";
+  document.getElementById("mk-ens").style.left=pos(ens)+"%";
+  document.getElementById("g-band").textContent=`${single.toFixed(3)} → ${ens.toFixed(3)}`;
+  document.getElementById("g-note").textContent=
+    `Heuristic: a single ${state.depth}${state.width!==1?" @"+state.width+"×":""} model ${state.tf?"with":"without"} the Transformer head is expected around ${single.toFixed(3)} on internal CV; the ${state.folds}-fold ensemble lifts it toward ${ens.toFixed(3)}. Real numbers depend on data volume and training — this is direction, not a measured result.`;
+}
+
+/* build controls */
+function seg(id,keys,cur,cb){const box=document.getElementById(id);keys.forEach(k=>{const b=document.createElement("button");b.textContent=k;if(k===cur)b.classList.add("on");b.onclick=()=>{box.querySelectorAll("button").forEach(x=>x.classList.remove("on"));b.classList.add("on");cb(k);};box.appendChild(b);});}
+seg("s-depth",Object.keys(DEPTHS),"ResNet-34",k=>{state.depth=k;document.getElementById("v-depth").textContent="["+DEPTHS[k].join(",")+"]";render();});
+seg("s-width",Object.keys(WIDTHS),"1×",k=>{state.width=WIDTHS[k];document.getElementById("v-width").textContent=k;render();});
+seg("s-sec",SECS.map(s=>s+"s"),"15s",k=>{state.sec=parseInt(k);document.getElementById("v-sec").textContent=k;render();});
+seg("s-tf",["On","Off"],"On",k=>{state.tf=(k==="On");document.getElementById("v-tf").textContent=k;render();});
+seg("s-bs",BSS.map(String),"64",k=>{state.bs=parseInt(k);document.getElementById("v-bs").textContent=k;render();});
+document.getElementById("v-depth").textContent="[3,4,6,3]";
+document.getElementById("v-width").textContent="1×";
+document.getElementById("v-sec").textContent="15s";
+document.getElementById("v-tf").textContent="On";
+document.getElementById("v-bs").textContent="64";
+document.getElementById("v-tfl").textContent="2";
+document.getElementById("v-folds").textContent="5";
+document.getElementById("r-tfl").oninput=e=>{state.tfl=parseInt(e.target.value);document.getElementById("v-tfl").textContent=e.target.value;render();};
+document.getElementById("r-folds").oninput=e=>{state.folds=parseInt(e.target.value);document.getElementById("v-folds").textContent=e.target.value;render();};
+render();
+</script>
+
+</body>
+</html>

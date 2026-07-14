@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ECG Challenge Architectures — Graph & Blueprint</title>
+<style>
+  :root {
+    --bg: #f2f5f3;
+    --surface: #ffffff;
+    --surface-2: #eef2f0;
+    --border: #d7ded9;
+    --text: #0e1a16;
+    --muted: #566a62;
+    --faint: #8b9c94;
+    --accent: #00a866;
+    --accent-soft: #d8f2e6;
+    --amber: #b8730a;
+    --red: #d13b4a;
+    --cyan: #0f8f9c;
+    --violet: #6a53c4;
+    --grid: rgba(14,26,22,0.06);
+    --font-display: system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --font-body: system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --font-mono: ui-monospace, "SF Mono", "Menlo", "Cascadia Code", "Roboto Mono", monospace;
+    --maxw: 1180px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0b1113;
+      --surface: #121b1e;
+      --surface-2: #172226;
+      --border: #23323a;
+      --text: #e6efec;
+      --muted: #93a7a0;
+      --faint: #6a7d77;
+      --accent: #00e08a;
+      --accent-soft: #10352a;
+      --amber: #ffbf5c;
+      --red: #ff6473;
+      --cyan: #3ccdd9;
+      --violet: #a596f0;
+      --grid: rgba(230,239,236,0.05);
+    }
+  }
+  :root[data-theme="light"] {
+    --bg: #f2f5f3; --surface: #ffffff; --surface-2: #eef2f0; --border: #d7ded9;
+    --text: #0e1a16; --muted: #566a62; --faint: #8b9c94; --accent: #00a866;
+    --accent-soft: #d8f2e6; --amber: #b8730a; --red: #d13b4a; --cyan: #0f8f9c;
+    --violet: #6a53c4; --grid: rgba(14,26,22,0.06);
+  }
+  :root[data-theme="dark"] {
+    --bg: #0b1113; --surface: #121b1e; --surface-2: #172226; --border: #23323a;
+    --text: #e6efec; --muted: #93a7a0; --faint: #6a7d77; --accent: #00e08a;
+    --accent-soft: #10352a; --amber: #ffbf5c; --red: #ff6473; --cyan: #3ccdd9;
+    --violet: #a596f0; --grid: rgba(230,239,236,0.05);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: var(--maxw); margin: 0 auto; padding: 0 24px; }
+
+  /* ---------- HERO ---------- */
+  header.hero {
+    position: relative;
+    overflow: hidden;
+    border-bottom: 1px solid var(--border);
+    background:
+      linear-gradient(180deg, var(--surface) 0%, var(--bg) 100%);
+  }
+  .hero-grid {
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(var(--grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size: 28px 28px;
+    mask-image: linear-gradient(180deg, #000 0%, transparent 92%);
+    -webkit-mask-image: linear-gradient(180deg, #000 0%, transparent 92%);
+  }
+  .hero-inner { position: relative; padding: 64px 24px 52px; max-width: var(--maxw); margin: 0 auto; }
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 12px; letter-spacing: 0.22em; text-transform: uppercase;
+    color: var(--accent); margin: 0 0 18px;
+  }
+  h1 {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: clamp(30px, 5.2vw, 54px);
+    line-height: 1.04;
+    letter-spacing: -0.02em;
+    margin: 0 0 18px;
+    text-wrap: balance;
+    max-width: 20ch;
+  }
+  h1 .hl { color: var(--accent); }
+  .lede { font-size: clamp(16px, 2vw, 19px); color: var(--muted); max-width: 62ch; margin: 0; }
+  .ecg-band { position: relative; height: 84px; margin-top: 30px; }
+  .ecg-band svg { width: 100%; height: 100%; display: block; }
+  .trace { fill: none; stroke: var(--accent); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+  @media (prefers-reduced-motion: no-preference) {
+    .trace {
+      stroke-dasharray: 1400;
+      stroke-dashoffset: 1400;
+      animation: draw 3.4s ease-out forwards;
+    }
+    @keyframes draw { to { stroke-dashoffset: 0; } }
+  }
+  .stat-row { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 28px; }
+  .stat {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 12px 18px; min-width: 120px;
+  }
+  .stat b { display: block; font-family: var(--font-mono); font-size: 22px; color: var(--text); letter-spacing: -0.01em; }
+  .stat span { font-size: 12.5px; color: var(--faint); text-transform: uppercase; letter-spacing: 0.08em; }
+
+  /* ---------- SECTIONS ---------- */
+  section { padding: 58px 0; border-bottom: 1px solid var(--border); }
+  .sec-head { margin-bottom: 30px; }
+  .sec-kicker {
+    font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.2em;
+    text-transform: uppercase; color: var(--faint); margin: 0 0 10px;
+  }
+  h2 { font-family: var(--font-display); font-weight: 750; font-size: clamp(23px, 3.4vw, 33px); letter-spacing: -0.015em; margin: 0 0 12px; text-wrap: balance; }
+  .sec-head p { color: var(--muted); max-width: 66ch; margin: 0; font-size: 16px; }
+
+  /* ---------- TAXONOMY GRAPH ---------- */
+  .graph-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 16px; padding: 20px; overflow-x: auto;
+  }
+  .taxo { width: 100%; height: auto; min-width: 720px; display: block; }
+  .taxo .edge { stroke: var(--border); stroke-width: 1.6; fill: none; }
+  .taxo .node-box { fill: var(--surface-2); stroke: var(--border); stroke-width: 1.4; }
+  .taxo .root-box { fill: var(--accent); stroke: var(--accent); }
+  .taxo text { font-family: var(--font-body); fill: var(--text); }
+  .taxo .root-label { font-family: var(--font-display); font-weight: 700; fill: #04150e; }
+  .taxo .fam-label { font-weight: 650; font-size: 14px; }
+  .taxo .fam-sub { font-family: var(--font-mono); font-size: 10.5px; fill: var(--faint); letter-spacing: 0.04em; }
+  .taxo .leaf-num { font-family: var(--font-mono); font-weight: 700; fill: var(--accent); font-size: 13px; }
+  .taxo .leaf-label { font-size: 12px; fill: var(--muted); }
+  .legend-row { display: flex; flex-wrap: wrap; gap: 16px 22px; margin-top: 18px; }
+  .legend-row .li { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+  .swatch { width: 12px; height: 12px; border-radius: 3px; flex: none; }
+
+  /* ---------- TEAM CARDS ---------- */
+  .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 14px; padding: 18px 18px 16px; position: relative;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .card-top { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+  .rank { font-family: var(--font-mono); font-weight: 700; font-size: 13px; color: var(--faint); }
+  .rank b { color: var(--accent); font-size: 20px; }
+  .fam-tag {
+    font-family: var(--font-mono); font-size: 10.5px; text-transform: uppercase;
+    letter-spacing: 0.06em; padding: 3px 8px; border-radius: 20px;
+    border: 1px solid var(--border); color: var(--muted); white-space: nowrap;
+  }
+  .card h3 { font-family: var(--font-display); font-size: 17.5px; font-weight: 700; margin: 0; letter-spacing: -0.01em; }
+  .card .idea { font-size: 14px; color: var(--muted); margin: 0; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 2px; }
+  .chip {
+    font-family: var(--font-mono); font-size: 11px; padding: 3px 8px; border-radius: 6px;
+    background: var(--surface-2); border: 1px solid var(--border); color: var(--muted);
+  }
+  .chip.fw { color: var(--cyan); border-color: color-mix(in srgb, var(--cyan) 35%, var(--border)); }
+  .card .trick { font-size: 13px; color: var(--text); margin: 0; padding-top: 8px; border-top: 1px dashed var(--border); }
+  .card .trick b { color: var(--accent); font-weight: 650; }
+
+  /* ---------- PATTERNS ---------- */
+  .patterns { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; }
+  .pat {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+    padding: 20px; border-left: 3px solid var(--accent);
+  }
+  .pat .pk { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); margin: 0 0 8px; }
+  .pat h4 { font-family: var(--font-display); font-size: 16.5px; margin: 0 0 8px; font-weight: 700; }
+  .pat p { font-size: 13.5px; color: var(--muted); margin: 0; }
+  .pat .count { float: right; font-family: var(--font-mono); font-size: 12px; color: var(--faint); }
+
+  /* ---------- BLUEPRINT PIPELINE ---------- */
+  .blueprint { background: var(--surface); border: 1px solid var(--border); border-radius: 18px; padding: 26px; }
+  .pipe { display: flex; flex-direction: column; gap: 0; }
+  .stage { display: grid; grid-template-columns: 148px 1fr; gap: 20px; align-items: stretch; }
+  .stage-rail { position: relative; display: flex; flex-direction: column; align-items: flex-end; padding-top: 4px; }
+  .stage-tag {
+    font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--faint); text-align: right;
+  }
+  .stage-shape { font-family: var(--font-mono); font-size: 12px; color: var(--accent); margin-top: 4px; }
+  .node {
+    background: var(--surface-2); border: 1px solid var(--border); border-radius: 12px;
+    padding: 15px 18px; margin-bottom: 4px; position: relative;
+  }
+  .node.key { border-color: color-mix(in srgb, var(--accent) 50%, var(--border)); background: color-mix(in srgb, var(--accent-soft) 55%, var(--surface-2)); }
+  .node h4 { font-family: var(--font-display); font-size: 16px; margin: 0 0 5px; font-weight: 700; }
+  .node p { font-size: 13.5px; color: var(--muted); margin: 0; }
+  .node .from { display: inline-block; margin-top: 8px; font-family: var(--font-mono); font-size: 11px; color: var(--accent); }
+  .connector { display: flex; justify-content: flex-start; margin-left: 168px; height: 26px; }
+  .connector::before {
+    content: ""; width: 2px; height: 100%;
+    background: linear-gradient(var(--accent), color-mix(in srgb, var(--accent) 30%, transparent));
+    margin-left: 30px;
+  }
+  .arrow-tip { margin-left: 168px; margin-top: -8px; margin-bottom: 2px; color: var(--accent); font-size: 13px; }
+
+  /* ---------- RECIPE ---------- */
+  .recipe { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin-top: 26px; }
+  .rc { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; }
+  .rc .rk { font-family: var(--font-mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--faint); margin: 0 0 6px; }
+  .rc ul { margin: 0; padding-left: 17px; }
+  .rc li { font-size: 13.5px; color: var(--muted); margin-bottom: 5px; }
+  .rc li b { color: var(--text); font-weight: 600; }
+  .rc code { font-family: var(--font-mono); font-size: 12px; color: var(--accent); background: var(--surface-2); padding: 1px 5px; border-radius: 4px; }
+
+  footer { padding: 34px 0 46px; }
+  footer p { color: var(--faint); font-size: 13px; margin: 4px 0; }
+  footer .mono { font-family: var(--font-mono); }
+
+  @media (max-width: 620px) {
+    .stage { grid-template-columns: 1fr; gap: 6px; }
+    .stage-rail { align-items: flex-start; }
+    .stage-tag, .stage-shape { text-align: left; }
+    .connector, .arrow-tip { margin-left: 30px; }
+  }
+</style>
+</head>
+<body>
+<header class="hero">
+  <div class="hero-grid"></div>
+  <div class="hero-inner">
+    <p class="eyebrow">PhysioNet / CinC Challenge 2020 · 12-lead ECG classification</p>
+    <h1>Ten winning architectures, mapped into <span class="hl">one blueprint</span> you can build.</h1>
+    <p class="lede">A structural read of the top-10 leaderboard codebases — how each team turned a raw 12-lead signal into 27 multi-label diagnoses — and a synthesized design that borrows the moves that actually recur among the winners.</p>
+    <div class="ecg-band" aria-hidden="true">
+      <svg viewBox="0 0 1120 84" preserveAspectRatio="none">
+        <path class="trace" d="M0,42 L120,42 L150,42 L162,30 L174,42 L210,42 L228,42 L236,14 L244,70 L252,20 L260,42 L300,42 L340,42 L352,30 L364,42 L410,42 L430,42 L438,14 L446,70 L454,20 L462,42 L520,42 L560,42 L572,30 L584,42 L630,42 L650,42 L658,14 L666,70 L674,20 L682,42 L740,42 L784,42 L796,30 L808,42 L858,42 L878,42 L886,14 L894,70 L902,20 L910,42 L980,42 L1030,42 L1042,30 L1054,42 L1120,42" />
+      </svg>
+    </div>
+    <div class="stat-row">
+      <div class="stat"><b>10</b><span>Teams reviewed</span></div>
+      <div class="stat"><b>6</b><span>Architecture families</span></div>
+      <div class="stat"><b>27</b><span>Scored diagnoses</span></div>
+      <div class="stat"><b>12→1D</b><span>Leads · CNN core</span></div>
+    </div>
+  </div>
+</header>
+
+<section>
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="sec-kicker">Graph 01 · Taxonomy</p>
+      <h2>How the ten codebases cluster</h2>
+      <p>Every team starts from a 1D convolutional backbone. What separates them is the temporal head bolted on top, the way side-information is fused, and whether signal-processing or clinical rules sit alongside the network. The graph groups all ten by their defining idea.</p>
+    </div>
+
+    <div class="graph-card">
+      <svg class="taxo" viewBox="0 0 1000 640" role="img" aria-label="Taxonomy graph of ten ECG architectures grouped into six families">
+        <!-- edges root -> families -->
+        <g>
+          <path class="edge" d="M250,320 C330,320 350,60 430,60" />
+          <path class="edge" d="M250,320 C330,320 350,210 430,210" />
+          <path class="edge" d="M250,320 C330,320 350,360 430,360" />
+          <path class="edge" d="M250,320 C330,320 350,450 430,450" />
+          <path class="edge" d="M250,320 C330,320 350,528 430,528" />
+          <path class="edge" d="M250,320 C330,320 350,600 430,600" />
+        </g>
+        <!-- edges families -> leaves -->
+        <g>
+          <path class="edge" d="M650,60 C700,60 720,44 770,44" />
+
+          <path class="edge" d="M650,210 C700,210 720,120 770,120" />
+          <path class="edge" d="M650,210 C700,210 720,178 770,178" />
+          <path class="edge" d="M650,210 C700,210 720,236 770,236" />
+          <path class="edge" d="M650,210 C700,210 720,294 770,294" />
+
+          <path class="edge" d="M650,360 C700,360 720,344 770,344" />
+          <path class="edge" d="M650,360 C700,360 720,402 770,402" />
+
+          <path class="edge" d="M650,450 C700,450 720,460 770,460" />
+
+          <path class="edge" d="M650,528 C700,528 720,528 770,528" />
+
+          <path class="edge" d="M650,600 C700,600 720,596 770,596" />
+        </g>
+
+        <!-- ROOT -->
+        <g>
+          <rect class="root-box" x="70" y="292" width="180" height="56" rx="12" />
+          <text class="root-label" x="160" y="316" text-anchor="middle" font-size="14">12-lead ECG</text>
+          <text class="root-label" x="160" y="334" text-anchor="middle" font-size="12">→ 27 diagnoses</text>
+        </g>
+
+        <!-- FAMILY NODES -->
+        <!-- F1 -->
+        <g>
+          <rect class="node-box" x="430" y="36" width="220" height="48" rx="10" style="stroke:var(--violet)"/>
+          <text class="fam-label" x="444" y="58">CNN + Transformer</text>
+          <text class="fam-sub" x="444" y="74">self-attention temporal head</text>
+        </g>
+        <!-- F2 -->
+        <g>
+          <rect class="node-box" x="430" y="186" width="220" height="48" rx="10" style="stroke:var(--accent)"/>
+          <text class="fam-label" x="444" y="208">SE-ResNet / attention CNN</text>
+          <text class="fam-sub" x="444" y="224">squeeze-excite residual core</text>
+        </g>
+        <!-- F3 -->
+        <g>
+          <rect class="node-box" x="430" y="336" width="220" height="48" rx="10" style="stroke:var(--cyan)"/>
+          <text class="fam-label" x="444" y="358">CNN + BiLSTM</text>
+          <text class="fam-sub" x="444" y="374">recurrent temporal head</text>
+        </g>
+        <!-- F4 -->
+        <g>
+          <rect class="node-box" x="430" y="426" width="220" height="48" rx="10" style="stroke:var(--amber)"/>
+          <text class="fam-label" x="444" y="448">TCN + self-supervised</text>
+          <text class="fam-sub" x="444" y="464">causal dilated conv + VAE</text>
+        </g>
+        <!-- F5 -->
+        <g>
+          <rect class="node-box" x="430" y="504" width="220" height="48" rx="10" style="stroke:var(--amber)"/>
+          <text class="fam-label" x="444" y="526">Scattering + CNN</text>
+          <text class="fam-sub" x="444" y="542">wavelet transform front-end</text>
+        </g>
+        <!-- F6 -->
+        <g>
+          <rect class="node-box" x="430" y="576" width="220" height="48" rx="10" style="stroke:var(--red)"/>
+          <text class="fam-label" x="444" y="598">CNN + rule-based</text>
+          <text class="fam-sub" x="444" y="614">deep net + clinical logic</text>
+        </g>
+
+        <!-- LEAF NODES (teams) -->
+        <!-- helper: each leaf box x=770 w=200 h=30 -->
+        <g>
+          <rect class="node-box" x="770" y="30" width="200" height="30" rx="8"/>
+          <text class="leaf-num" x="784" y="49">01</text><text class="leaf-label" x="806" y="49">CTN · conv encoder + wide feats</text>
+
+          <rect class="node-box" x="770" y="106" width="200" height="30" rx="8"/>
+          <text class="leaf-num" x="784" y="125">02</text><text class="leaf-label" x="806" y="125">SE-ResNet18 1D · ensemble</text>
+
+          <rect class="node-box" x="770" y="164" width="200" height="30" rx="8"/>
+          <text class="leaf-num" x="784" y="183">06</text><text class="leaf-label" x="806" y="183">ResNeSt / ResNeXt family</text>
+
+          <rect class="node-box" x="770" y="222" width="200" height="30" rx="8"/>
+          <text class="leaf-num" x="784" y="241">08</text><text class="leaf-label" x="806" y="241">SE-ResNet50</text>
+
+          <rect class="node-box" x="770" y="280" width="200" height="30" rx="8"/>
+          <text class="leaf-num" x="784" y="299">10</text><text class="leaf-label" x="806" y="299">ECGNet · SE + demographics</text>
+
+          <rect class="node-box" x="770" y="330" width="200" height="30" rx="8"/>
+          <text class="leaf-num" x="784" y="349">05</text><text class="leaf-label" x="806" y="349">Multi-scale CNN + domain-adv</text>
+
+          <rect class="node-box" x="770" y="388" width="200" height="30" rx="8"/>
+          <text class="leaf-num" x="784" y="407">09</text><text class="leaf-label" x="806" y="407">ResNet-16 + BiLSTM</text>
+
+          <rect class="node-box" x="770" y="446" width="200" height="30" rx="8"/>
+          <text class="leaf-num" x="784" y="465">07</text><text class="leaf-label" x="806" y="465">Causal CNN + VAE pretrain</text>
+
+          <rect class="node-box" x="770" y="514" width="200" height="30" rx="8"/>
+          <text class="leaf-num" x="784" y="533">04</text><text class="leaf-label" x="806" y="533">Wavelet scattering + CNN</text>
+
+          <rect class="node-box" x="770" y="582" width="200" height="30" rx="8"/>
+          <text class="leaf-num" x="784" y="601">03</text><text class="leaf-label" x="806" y="601">Dual ResNet + rule models</text>
+        </g>
+      </svg>
+
+      <div class="legend-row">
+        <div class="li"><span class="swatch" style="background:var(--violet)"></span>Attention / Transformer head</div>
+        <div class="li"><span class="swatch" style="background:var(--accent)"></span>SE-ResNet backbone (most common)</div>
+        <div class="li"><span class="swatch" style="background:var(--cyan)"></span>Recurrent (BiLSTM) head</div>
+        <div class="li"><span class="swatch" style="background:var(--amber)"></span>Signal-processing / self-supervised</div>
+        <div class="li"><span class="swatch" style="background:var(--red)"></span>Hybrid with clinical rules</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="sec-kicker">Reference · The ten in detail</p>
+      <h2>Each team, one card</h2>
+      <p>Ranked as on the leaderboard. Every card names the backbone, the framework, and the single move that made the entry distinctive.</p>
+    </div>
+
+    <div class="cards">
+      <div class="card">
+        <div class="card-top"><span class="rank">rank <b>01</b></span><span class="fam-tag">CNN + Transformer</span></div>
+        <h3>CTN — Conv-Transformer</h3>
+        <p class="idea">Six-layer 1D-CNN encoder (≈20× downsample) feeds a Transformer encoder with positional encoding; mean-pooled, then fused with wide features.</p>
+        <div class="chips"><span class="chip fw">PyTorch</span><span class="chip">multi-head attn</span><span class="chip">15 s window</span><span class="chip">wide feats</span></div>
+        <p class="trick"><b>Signature:</b> global self-attention over convolved beats, concatenated with hand-crafted + demographic features before the classifier.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-top"><span class="rank">rank <b>02</b></span><span class="fam-tag">SE-ResNet</span></div>
+        <h3>SE-ResNet18 (1D) ensemble</h3>
+        <p class="idea">A stable of 1D SE-ResNet variants — SCSE, dilated, LSTM-headed — trained on stratified splits and blended.</p>
+        <div class="chips"><span class="chip fw">PyTorch</span><span class="chip">squeeze-excite</span><span class="chip">ensemble</span><span class="chip">"magic weight"</span></div>
+        <p class="trick"><b>Signature:</b> breadth over depth — many complementary SE-ResNets averaged with tuned per-model weights.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-top"><span class="rank">rank <b>03</b></span><span class="fam-tag">CNN + rules</span></div>
+        <h3>Dual ResNet + clinical logic</h3>
+        <p class="idea">Two ResNet/SE-ResNet models (A + B, 8-lead, 500 Hz) blended, then overridden by rule models for bradycardia and PVC; a U-Net handles QRS.</p>
+        <div class="chips"><span class="chip fw">PyTorch</span><span class="chip fw">Keras</span><span class="chip">rule models</span><span class="chip">U-Net</span></div>
+        <p class="trick"><b>Signature:</b> deep predictions corrected by explicit cardiology rules for rhythm classes the net gets wrong.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-top"><span class="rank">rank <b>04</b></span><span class="fam-tag">Scattering + CNN</span></div>
+        <h3>Wavelet scattering front-end</h3>
+        <p class="idea">A 3rd-order scattering transform turns the signal into stable time-frequency features fed to a small CNN / attention model; orchestrated with Kubeflow.</p>
+        <div class="chips"><span class="chip fw">PyTorch</span><span class="chip">kymatio</span><span class="chip">8192 len</span><span class="chip">Kubeflow</span></div>
+        <p class="trick"><b>Signature:</b> deterministic signal-processing features replace part of the learned front-end for robustness.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-top"><span class="rank">rank <b>05</b></span><span class="fam-tag">CNN + BiLSTM</span></div>
+        <h3>Multi-scale CNN + domain-adversarial</h3>
+        <p class="idea">Two parallel conv stacks (small &amp; large kernels) → BiLSTM each → concat with age/sex → per-class heads. A gradient-reversal branch generalizes across source datasets.</p>
+        <div class="chips"><span class="chip fw">TensorFlow</span><span class="chip">GRL</span><span class="chip">per-class thresh</span><span class="chip">multi-scale</span></div>
+        <p class="trick"><b>Signature:</b> domain generalization via gradient reversal so the model ignores which hospital the recording came from.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-top"><span class="rank">rank <b>06</b></span><span class="fam-tag">SE-ResNet</span></div>
+        <h3>Configurable ResNeSt family</h3>
+        <p class="idea">One template spanning ResNet / ResNeXt / SE-ResNet / ResNeSt, pre-activation blocks, split-attention, variable-length handling via adaptive pooling.</p>
+        <div class="chips"><span class="chip fw">PyTorch</span><span class="chip">split-attention</span><span class="chip">pre-act</span><span class="chip">cardinality</span></div>
+        <p class="trick"><b>Signature:</b> a single configurable backbone that sweeps the whole residual-network design space.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-top"><span class="rank">rank <b>07</b></span><span class="fam-tag">TCN + SSL</span></div>
+        <h3>Causal CNN + VAE pretraining</h3>
+        <p class="idea">A dilated causal-convolution encoder (TCN) pretrained as a variational autoencoder on unlabeled ECG, then fine-tuned to classify.</p>
+        <div class="chips"><span class="chip fw">PyTorch</span><span class="chip">dilated conv</span><span class="chip">VAE</span><span class="chip">self-supervised</span></div>
+        <p class="trick"><b>Signature:</b> unsupervised representation learning first — the only team leaning hard on self-supervision.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-top"><span class="rank">rank <b>08</b></span><span class="fam-tag">SE-ResNet</span></div>
+        <h3>SE-ResNet50</h3>
+        <p class="idea">A clean 1D SE-ResNet50 on 10 s / 500 Hz / 4000-sample windows, 27-way sigmoid output — the textbook strong baseline.</p>
+        <div class="chips"><span class="chip fw">PyTorch</span><span class="chip">SE bottleneck</span><span class="chip">staged LR</span><span class="chip">4000 pts</span></div>
+        <p class="trick"><b>Signature:</b> disciplined execution of the single most reliable backbone in the field.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-top"><span class="rank">rank <b>09</b></span><span class="fam-tag">CNN + BiLSTM</span></div>
+        <h3>ResNet-16 + BiLSTM</h3>
+        <p class="idea">A Rajpurkar-style 16-block subsampling ResNet followed by a Bidirectional LSTM(150) and a 24-way sigmoid.</p>
+        <div class="chips"><span class="chip fw">Keras</span><span class="chip">zero-pad shortcut</span><span class="chip">BiLSTM</span></div>
+        <p class="trick"><b>Signature:</b> the Stanford ECG architecture adapted to multi-label 12-lead with a recurrent tail.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-top"><span class="rank">rank <b>10</b></span><span class="fam-tag">SE-ResNet + meta</span></div>
+        <h3>ECGNet — SE + demographics</h3>
+        <p class="idea">ResNet-34 whose BasicBlocks carry in-block squeeze-excite; age &amp; sex are concatenated to the pooled features before the FC head.</p>
+        <div class="chips"><span class="chip fw">PyTorch</span><span class="chip">in-block SE</span><span class="chip">age/sex fusion</span><span class="chip">weighted BCE</span></div>
+        <p class="trick"><b>Signature:</b> demographic fusion + a label-frequency-weighted multi-label loss.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="sec-kicker">Synthesis · What actually recurs</p>
+      <h2>The moves that show up again and again</h2>
+      <p>Strip away the framework wars and the leaderboard converges on a handful of decisions. These are the ones worth copying.</p>
+    </div>
+    <div class="patterns">
+      <div class="pat">
+        <p class="pk">Backbone <span class="count">7 / 10</span></p>
+        <h4>1D residual net with SE attention</h4>
+        <p>Squeeze-excitation on a 1D ResNet is the default winning core. It is the safest single bet in the whole field.</p>
+      </div>
+      <div class="pat">
+        <p class="pk">Front-end <span class="count">10 / 10</span></p>
+        <h4>Resample to 500 Hz, fixed window</h4>
+        <p>Everyone standardizes sampling rate, crops/pads to a fixed length (10–15 s), and normalizes gain before the net sees anything.</p>
+      </div>
+      <div class="pat">
+        <p class="pk">Side info <span class="count">5 / 10</span></p>
+        <h4>Fuse age, sex &amp; hand-crafted feats</h4>
+        <p>Demographics and HRV/statistical features are concatenated to deep features right before the classifier — cheap, consistent lift.</p>
+      </div>
+      <div class="pat">
+        <p class="pk">Objective <span class="count">10 / 10</span></p>
+        <h4>Weighted multi-label BCE + thresholds</h4>
+        <p>Sigmoid outputs, class-frequency-weighted BCE, and per-class decision thresholds tuned on validation to the challenge metric.</p>
+      </div>
+      <div class="pat">
+        <p class="pk">Robustness <span class="count">3 / 10</span></p>
+        <h4>Variable length via adaptive pooling</h4>
+        <p>Adaptive max/avg pooling (or flagged concatenation) lets one model ingest recordings of any duration without retraining.</p>
+      </div>
+      <div class="pat">
+        <p class="pk">Ensembling <span class="count">4 / 10</span></p>
+        <h4>Stratified folds, blended models</h4>
+        <p>Stratified multi-label splits plus averaging several backbones/seeds is how the top ranks squeeze out the last points.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="sec-kicker">Graph 02 · Blueprint</p>
+      <h2>Your architecture — the recurring moves, assembled</h2>
+      <p>This is the model to build: a 1D SE-ResNet backbone (the consensus core), an optional lightweight attention head for temporal context, and demographic + feature fusion — trained with the objective and thresholding every top team used. Each stage notes which team it's borrowed from.</p>
+    </div>
+
+    <div class="blueprint">
+      <div class="pipe">
+
+        <div class="stage">
+          <div class="stage-rail"><span class="stage-tag">Input / front-end</span><span class="stage-shape">12 × 7500</span></div>
+          <div class="node">
+            <h4>Signal conditioning</h4>
+            <p>Resample all recordings to 500 Hz, correct gain, z-normalize per lead, crop/pad to a fixed 15 s window. Light augmentation: random crop, lead dropout, power-line noise.</p>
+            <span class="from">← universal front-end (all 10 teams)</span>
+          </div>
+        </div>
+        <div class="arrow-tip">▼</div>
+
+        <div class="stage">
+          <div class="stage-rail"><span class="stage-tag">Stem</span><span class="stage-shape">64 × 1875</span></div>
+          <div class="node">
+            <h4>Wide-kernel multi-scale stem</h4>
+            <p>A large first conv (kernel ≈15, stride 2) plus a parallel small-kernel branch to capture both morphology and rhythm, then max-pool.</p>
+            <span class="from">← Team 05 multi-scale · Team 08 stem</span>
+          </div>
+        </div>
+        <div class="arrow-tip">▼</div>
+
+        <div class="stage">
+          <div class="stage-rail"><span class="stage-tag">Backbone</span><span class="stage-shape">512 × 235</span></div>
+          <div class="node key">
+            <h4>1D SE-ResNet (34-layer, squeeze-excite blocks)</h4>
+            <p>The consensus core: residual blocks with per-channel squeeze-excitation recalibration. Dropout inside blocks; zero-init the last BN in each residual branch.</p>
+            <span class="from">← Team 02 · 06 · 08 · 10 (SE-ResNet family)</span>
+          </div>
+        </div>
+        <div class="arrow-tip">▼</div>
+
+        <div class="stage">
+          <div class="stage-rail"><span class="stage-tag">Temporal head</span><span class="stage-shape">512 × 235</span></div>
+          <div class="node">
+            <h4>Lightweight Transformer encoder <span style="color:var(--faint);font-weight:400;font-size:13px">(optional)</span></h4>
+            <p>2–4 self-attention layers with positional encoding over the convolved sequence, for long-range rhythm context. Swap for a BiLSTM if you prefer the recurrent route.</p>
+            <span class="from">← Team 01 (Transformer) · Team 05/09 (BiLSTM)</span>
+          </div>
+        </div>
+        <div class="arrow-tip">▼</div>
+
+        <div class="stage">
+          <div class="stage-rail"><span class="stage-tag">Pooling + fusion</span><span class="stage-shape">512 + k</span></div>
+          <div class="node key">
+            <h4>Adaptive pool ⊕ demographics ⊕ hand-crafted feats</h4>
+            <p>Adaptive pooling (handles any length) → concatenate age, sex, and HRV / statistical features from a feature extractor. One FC bottleneck fuses them.</p>
+            <span class="from">← Team 10 demographics · Team 01 wide feats</span>
+          </div>
+        </div>
+        <div class="arrow-tip">▼</div>
+
+        <div class="stage">
+          <div class="stage-rail"><span class="stage-tag">Output</span><span class="stage-shape">27</span></div>
+          <div class="node">
+            <h4>27-way sigmoid · per-class thresholds</h4>
+            <p>Multi-label sigmoid head. Decision thresholds optimized per class on validation against the challenge metric — not a flat 0.5.</p>
+            <span class="from">← Team 05 threshold search (all teams: sigmoid)</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="recipe">
+      <div class="rc">
+        <p class="rk">Loss &amp; balance</p>
+        <ul>
+          <li><b>Weighted BCE</b> with <code>1/log(freq)</code> class weights</li>
+          <li>Optional <b>focal</b> term for rare classes</li>
+          <li>Class-balanced or stratified multi-label sampling</li>
+        </ul>
+      </div>
+      <div class="rc">
+        <p class="rk">Optimization</p>
+        <ul>
+          <li><b>Adam</b>, LR <code>1e-3</code> → staged decay</li>
+          <li>Batch 64 · 30–40 epochs</li>
+          <li>Zero-init residual BN for stable start</li>
+        </ul>
+      </div>
+      <div class="rc">
+        <p class="rk">Generalization</p>
+        <ul>
+          <li><b>5-fold</b> stratified ensemble + seed averaging</li>
+          <li>Optional <b>domain-adversarial</b> branch (Team 05)</li>
+          <li>Optional <b>self-supervised</b> pretrain (Team 07)</li>
+        </ul>
+      </div>
+      <div class="rc">
+        <p class="rk">Inference</p>
+        <ul>
+          <li>Sliding-window over long records, average logits</li>
+          <li>Apply tuned <b>per-class thresholds</b></li>
+          <li>Blend fold models for the final vote</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <p class="mono">Top-10-Teams-Codes · PhysioNet/CinC Challenge 2020 · structural review</p>
+    <p>Backbones, heads and training recipes read directly from each team's model and training source. Ranks reflect folder numbering in the repository.</p>
+  </div>
+</footer>
+
+<script>
+  (function () {
+    var root = document.documentElement;
+    function apply(theme) { if (theme) root.setAttribute('data-theme', theme); }
+    try {
+      var stored = null;
+      apply(stored);
+    } catch (e) {}
+  })();
+</script>
+
+</body>
+</html>
